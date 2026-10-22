@@ -33,7 +33,7 @@ AVAILABLE_MODELS = {
         },
         {
             "id": "lite_2", 
-            "name": "Lumina Lite (Nemotron Nano 30B)", 
+            "name": "Lumina Lite (Nemotron Flash NVIDIA)", 
             "token": os.getenv("LITE_API_TOKEN_2"), 
             "link": os.getenv("LITE_API_LINK_2"), 
             "model": os.getenv("LITE_MODEL_NAME_2"),
