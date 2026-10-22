@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nâng cấp Lumina Pro</title>
+    <style>
+        body { background: #f5f7fb; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: sans-serif; margin: 0; }
+        .card { background: white; padding: 40px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 400px; text-align: center; }
+        h2 { color: #ff8f00; margin-bottom: 10px; }
+        p { color: #666; line-height: 1.6; margin-bottom: 20px; }
+        .btn { display: inline-block; padding: 12px 24px; background: linear-gradient(45deg, #ff8f00, #ffb300); color: white; text-decoration: none; border-radius: 8px; font-weight: bold; box-shadow: 0 4px 10px rgba(255,143,0,0.3); }
+        .btn:hover { opacity: 0.9; }
+        .btn-back { display: block; margin-top: 15px; color: #888; font-size: 14px; text-decoration: none; }
+        .btn-back:hover { color: #1e88e5; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>🚀 Nâng cấp Lumina Pro</h2>
+        <p>Chào <b>{{ username }}</b>,<br><br>
+        Gói <b>Lumina Pro</b> cho phép bạn sử dụng các mô hình AI mạnh mẽ nhất (GLM 5.2, GPT-OSS 120B, Qwen 3.8) với tốc độ và độ thông minh vượt trội. Bạn cũng sẽ có giới hạn lên đến <b>70 tin nhắn/ngày</b>.<br><br>
+        Vui lòng liên hệ Admin để được cấp quyền.</p>
+        
+        <a href="mailto:admin@lumina.ai?subject=Yeu cau cap quyen Lumina Pro&body=Xin chao Admin, toi la {{ username }}. Toi muon nang cap tai khoan len Lumina Pro." class="btn">📧 Liên hệ Admin ngay</a>
+        
+        <a href="/" class="btn-back">← Quay lại Chat</a>
+    </div>
+</body>
+</html>
