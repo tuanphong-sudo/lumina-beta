@@ -1,6 +1,5 @@
 import os
 import sqlite3
-import json
 import requests
 import markdown
 from datetime import datetime, timedelta
@@ -78,16 +77,17 @@ AVAILABLE_MODELS = {
 }
 
 def get_all_models():
-    # Lọc bỏ những model không có đủ Token/Link/Tên
     valid_lite = [m for m in AVAILABLE_MODELS["lite"] if m['token'] and m['link'] and m['model']]
     valid_pro = [m for m in AVAILABLE_MODELS["pro"] if m['token'] and m['link'] and m['model']]
     return valid_lite + valid_pro
 
 # ==========================================
-# 3. DATABASE (SQLITE)
+# 3. DATABASE (SQLITE - DÙNG /tmp CHO VERCEL)
 # ==========================================
+DB_PATH = '/tmp/database.db'
+
 def init_db():
-    conn = sqlite3.connect('database.db')
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute('''CREATE TABLE IF NOT EXISTS users 
                  (id INTEGER PRIMARY KEY AUTOINCREMENT, 
@@ -104,7 +104,7 @@ def init_db():
 init_db()
 
 def get_db():
-    conn = sqlite3.connect('database.db')
+    conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -354,5 +354,9 @@ def change_password(user_id):
     conn.close()
     return jsonify({"success": True})
 
+# ==========================================
+# 9. CHẠY SERVER (TƯƠNG THÍCH CẢ LOCAL & VERCEL)
+# ==========================================
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
