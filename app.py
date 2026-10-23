@@ -33,7 +33,7 @@ AVAILABLE_MODELS = {
         },
         {
             "id": "lite_2", 
-            "name": "Lumina Lite (Nemotron Flash NVIDIA)", 
+            "name": "Lumina Lite (Xingchen 4.0)", 
             "token": os.getenv("LITE_API_TOKEN_2"), 
             "link": os.getenv("LITE_API_LINK_2"), 
             "model": os.getenv("LITE_MODEL_NAME_2"),
@@ -43,7 +43,7 @@ AVAILABLE_MODELS = {
     "pro": [
         {
             "id": "pro_1", 
-            "name": "Lumina Pro (Zhipu GLM 5.2)", 
+            "name": "Lumina Pro (Llama 3.1B)", 
             "token": os.getenv("PRO_API_TOKEN_1"), 
             "link": os.getenv("PRO_API_LINK_1"), 
             "model": os.getenv("PRO_MODEL_NAME_1"),
@@ -84,7 +84,15 @@ def get_all_models():
 # ==========================================
 # 3. DATABASE (SQLITE - DÙNG /tmp CHO VERCEL)
 # ==========================================
-DB_PATH = '/tmp/database.db'
+# ==========================================
+# 3. DATABASE (SQLITE - DÀNH CHO RENDER)
+# ==========================================
+# Đường dẫn lưu database trên ổ đĩa của Render
+# ==========================================
+# 3. DATABASE (SQLITE - DÀNH CHO RENDER)
+# ==========================================
+# Đường dẫn lưu database trên ổ đĩa của Render
+DB_PATH = '/var/data/database.db'
 
 def init_db():
     conn = sqlite3.connect(DB_PATH)
