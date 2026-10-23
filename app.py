@@ -1,5 +1,6 @@
 import os
 import sqlite3
+import json
 import requests
 import markdown
 from datetime import datetime, timedelta
@@ -33,7 +34,7 @@ AVAILABLE_MODELS = {
         },
         {
             "id": "lite_2", 
-            "name": "Lumina Lite (Xingchen 4.0)", 
+            "name": "Lumina Lite (Nemotron 3 Ultra)", 
             "token": os.getenv("LITE_API_TOKEN_2"), 
             "link": os.getenv("LITE_API_LINK_2"), 
             "model": os.getenv("LITE_MODEL_NAME_2"),
@@ -43,7 +44,7 @@ AVAILABLE_MODELS = {
     "pro": [
         {
             "id": "pro_1", 
-            "name": "Lumina Pro (Llama 3.1B)", 
+            "name": "Lumina Pro (Zhipu GLM 5.2)", 
             "token": os.getenv("PRO_API_TOKEN_1"), 
             "link": os.getenv("PRO_API_LINK_1"), 
             "model": os.getenv("PRO_MODEL_NAME_1"),
@@ -82,17 +83,14 @@ def get_all_models():
     return valid_lite + valid_pro
 
 # ==========================================
-# 3. DATABASE (SQLITE - DÙNG /tmp CHO VERCEL)
+# 3. DATABASE (TỰ ĐỘNG NHẬN DIỆN WINDOWS / RENDER)
 # ==========================================
-# ==========================================
-# 3. DATABASE (SQLITE - DÀNH CHO RENDER)
-# ==========================================
-# Đường dẫn lưu database trên ổ đĩa của Render
-# ==========================================
-# 3. DATABASE (SQLITE - DÀNH CHO RENDER)
-# ==========================================
-# Đường dẫn lưu database trên ổ đĩa của Render
-DB_PATH = '/var/data/database.db'
+# Nếu chạy trên Render (có thư mục /var/data), lưu vào ổ đĩa vĩnh viễn.
+# Nếu chạy trên Windows (Local), lưu file ngay tại thư mục dự án.
+if os.path.exists('/var/data'):
+    DB_PATH = '/var/data/database.db'
+else:
+    DB_PATH = 'database.db'
 
 def init_db():
     conn = sqlite3.connect(DB_PATH)
@@ -363,7 +361,7 @@ def change_password(user_id):
     return jsonify({"success": True})
 
 # ==========================================
-# 9. CHẠY SERVER (TƯƠNG THÍCH CẢ LOCAL & VERCEL)
+# 9. CHẠY SERVER (TƯƠNG THÍCH CẢ LOCAL & RENDER)
 # ==========================================
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
