@@ -1,17 +1,16 @@
 import os
+import sqlite3
 import psycopg2
 import psycopg2.extras
-import json
 import requests
 import markdown
-import io
 import base64
+import urllib.parse
 from datetime import datetime, timedelta
 from functools import wraps
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 from dotenv import load_dotenv
 from werkzeug.security import generate_password_hash, check_password_hash
-from huggingface_hub import InferenceClient
 
 # ==========================================
 # 1. KHỞI TẠO VÀ CẤU HÌNH
@@ -20,7 +19,6 @@ load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "lumina_default_key_change_me")
-
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123").strip()
 
 # ==========================================
@@ -38,7 +36,7 @@ AVAILABLE_MODELS = {
         },
         {
             "id": "lite_2", 
-            "name": "Lumina Lite (Liquid LFM 2.5)", 
+            "name": "Lumina Lite (Cohere)", 
             "token": os.getenv("LITE_API_TOKEN_2"), 
             "link": os.getenv("LITE_API_LINK_2"), 
             "model": os.getenv("LITE_MODEL_NAME_2"),
@@ -48,7 +46,7 @@ AVAILABLE_MODELS = {
     "pro": [
         {
             "id": "pro_1", 
-            "name": "Lumina Pro (Inkling Small)", 
+            "name": "Lumina Pro (Nemotron 3 Nano Omni)", 
             "token": os.getenv("PRO_API_TOKEN_1"), 
             "link": os.getenv("PRO_API_LINK_1"), 
             "model": os.getenv("PRO_MODEL_NAME_1"),
@@ -87,51 +85,51 @@ def get_all_models():
     return valid_lite + valid_pro
 
 # ==========================================
-# 3. DATABASE (POSTGRESQL - DÀNH CHO VERCEL)
+# 3. DATABASE (TỰ ĐỘNG NHẬN DIỆN SQLITE / POSTGRES)
 # ==========================================
-# Lấy chuỗi kết nối từ biến môi trường (Vercel sẽ tự inject)
 DATABASE_URL = os.getenv("DATABASE_URL")
+IS_POSTGRES = bool(DATABASE_URL)
 
 def get_db():
-    # psycopg2 yêu cầu chuỗi bắt đầu bằng postgresql:// thay vì postgres://
-    if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
-        db_url = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+    if IS_POSTGRES:
+        db_url = DATABASE_URL.replace("postgres://", "postgresql://", 1) if DATABASE_URL.startswith("postgres://") else DATABASE_URL
+        conn = psycopg2.connect(db_url)
+        return conn
     else:
-        db_url = DATABASE_URL
-    
-    conn = psycopg2.connect(db_url)
-    return conn
+        conn = sqlite3.connect('database.db')
+        conn.row_factory = sqlite3.Row
+        return conn
+
+def get_cursor(conn):
+    if IS_POSTGRES:
+        return conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    return conn.cursor()
+
+def P():
+    return "%s" if IS_POSTGRES else "?"
 
 def init_db():
-    if not DATABASE_URL:
-        print("⚠️ CẢNH BÁO: Chưa có DATABASE_URL. Hãy tạo Vercel Postgres và kết nối.")
-        return
-        
     conn = get_db()
     c = conn.cursor()
-    # Tạo bảng users (Postgres dùng SERIAL thay cho AUTOINCREMENT)
-    c.execute('''CREATE TABLE IF NOT EXISTS users 
-                 (id SERIAL PRIMARY KEY, 
-                  username VARCHAR(255) UNIQUE, 
-                  password TEXT, 
-                  is_pro INTEGER DEFAULT 0,
-                  created_at TEXT,
-                  pro_expire TEXT,
-                  msg_count INTEGER DEFAULT 0,
-                  last_msg_date TEXT)''')
-    # Tạo bảng images
-    c.execute('''CREATE TABLE IF NOT EXISTS images 
-                 (id SERIAL PRIMARY KEY,
-                  username VARCHAR(255),
-                  prompt TEXT,
-                  created_at TEXT)''')
+    
+    if IS_POSTGRES:
+        c.execute('''CREATE TABLE IF NOT EXISTS users 
+                     (id SERIAL PRIMARY KEY, username VARCHAR(255) UNIQUE, password TEXT, is_pro INTEGER DEFAULT 0,
+                      created_at TEXT, pro_expire TEXT, msg_count INTEGER DEFAULT 0, last_msg_date TEXT)''')
+        c.execute('''CREATE TABLE IF NOT EXISTS images 
+                     (id SERIAL PRIMARY KEY, username VARCHAR(255), prompt TEXT, created_at TEXT)''')
+    else:
+        c.execute('''CREATE TABLE IF NOT EXISTS users 
+                     (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, password TEXT, is_pro INTEGER DEFAULT 0,
+                      created_at TEXT, pro_expire TEXT, msg_count INTEGER DEFAULT 0, last_msg_date TEXT)''')
+        c.execute('''CREATE TABLE IF NOT EXISTS images 
+                     (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, prompt TEXT, created_at TEXT)''')
+                     
     conn.commit()
     c.close()
     conn.close()
 
-# Chỉ khởi tạo DB nếu có URL (tránh lỗi khi chạy local không có Postgres)
-if DATABASE_URL:
-    init_db()
+init_db()
 
 # ==========================================
 # 4. DECORATORS
@@ -163,20 +161,17 @@ def login_page():
         username = data.get('username', '').strip()
         password = data.get('password', '')
 
-        if not DATABASE_URL:
-            return jsonify({"success": False, "message": "Hệ thống chưa cấu hình Database!"})
-
         conn = get_db()
-        c = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        c = get_cursor(conn)
         
         if action == 'register':
             try:
                 hashed_pw = generate_password_hash(password)
-                c.execute("INSERT INTO users (username, password, is_pro, created_at) VALUES (%s, %s, 0, %s)",
+                c.execute(f"INSERT INTO users (username, password, is_pro, created_at) VALUES ({P()}, {P()}, 0, {P()})",
                              (username, hashed_pw, datetime.now().strftime("%Y-%m-%d %H:%M")))
                 conn.commit()
                 return jsonify({"success": True, "message": "Đăng ký thành công!"})
-            except psycopg2.IntegrityError:
+            except Exception:
                 conn.rollback()
                 return jsonify({"success": False, "message": "Tên đăng nhập đã tồn tại!"})
             finally:
@@ -184,7 +179,7 @@ def login_page():
                 conn.close()
                 
         elif action == 'login':
-            c.execute("SELECT * FROM users WHERE username = %s", (username,))
+            c.execute(f"SELECT * FROM users WHERE username = {P()}", (username,))
             user = c.fetchone()
             c.close()
             conn.close()
@@ -204,12 +199,9 @@ def logout():
 @app.route('/')
 @login_required
 def index():
-    if not DATABASE_URL:
-        return "Lỗi: Chưa cấu hình DATABASE_URL", 500
-        
     conn = get_db()
-    c = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-    c.execute("SELECT * FROM users WHERE id = %s", (session['user_id'],))
+    c = get_cursor(conn)
+    c.execute(f"SELECT * FROM users WHERE id = {P()}", (session['user_id'],))
     user = c.fetchone()
     
     if not user:
@@ -227,7 +219,7 @@ def index():
             if datetime.now() < expire_date:
                 is_pro = True
             else:
-                c.execute("UPDATE users SET is_pro = 0, pro_expire = NULL WHERE id = %s", (user['id'],))
+                c.execute(f"UPDATE users SET is_pro = 0, pro_expire = NULL WHERE id = {P()}", (user['id'],))
                 conn.commit()
                 
     session['is_pro'] = is_pro
@@ -247,8 +239,8 @@ def chat():
         return jsonify({"error": "Tin nhắn không được để trống"}), 400
 
     conn = get_db()
-    c = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-    c.execute("SELECT * FROM users WHERE id = %s", (session['user_id'],))
+    c = get_cursor(conn)
+    c.execute(f"SELECT * FROM users WHERE id = {P()}", (session['user_id'],))
     user = c.fetchone()
     
     is_pro_valid = False
@@ -260,7 +252,7 @@ def chat():
             if datetime.now() < expire_date:
                 is_pro_valid = True
             else:
-                c.execute("UPDATE users SET is_pro = 0, pro_expire = NULL WHERE id = %s", (user['id'],))
+                c.execute(f"UPDATE users SET is_pro = 0, pro_expire = NULL WHERE id = {P()}", (user['id'],))
                 conn.commit()
 
     today_str = datetime.now().strftime("%Y-%m-%d")
@@ -273,7 +265,7 @@ def chat():
         conn.close()
         return jsonify({"error": f"Bạn đã đạt giới hạn {max_msgs} tin nhắn/ngày."}), 403
 
-    c.execute("UPDATE users SET msg_count = %s, last_msg_date = %s WHERE id = %s", (current_count + 1, today_str, user['id']))
+    c.execute(f"UPDATE users SET msg_count = {P()}, last_msg_date = {P()} WHERE id = {P()}", (current_count + 1, today_str, user['id']))
     conn.commit()
     c.close()
     conn.close()
@@ -306,7 +298,7 @@ def chat():
         return jsonify({"error": f"Lỗi gọi API: {str(e)}"}), 502
 
 # ==========================================
-# 6. ROUTE: TẠO ẢNH (HUGGING FACE)
+# 6. ROUTE: TẠO ẢNH (POLLINATIONS AI)
 # ==========================================
 @app.route('/api/generate-image', methods=['POST'])
 @login_required
@@ -317,23 +309,32 @@ def generate_image():
     if not prompt:
         return jsonify({"error": "Mô tả ảnh không được để trống"}), 400
 
-    hf_token = os.getenv("MODEL_AI_TOKEN_IMAGE", "").strip()
-    hf_model_id = os.getenv("MODEL_AI_ID_IMAGE", "black-forest-labs/FLUX.1-schnell").strip()
+    api_key = os.getenv("MODEL_AI_TOKEN_IMAGE", "").strip()
+    model_id = os.getenv("MODEL_AI_ID_IMAGE", "zimage").strip()
 
-    if not hf_token:
+    if not api_key:
         return jsonify({"error": "Server chưa cấu hình MODEL_AI_TOKEN_IMAGE"}), 500
 
     try:
-        client = InferenceClient(api_key=hf_token)
-        image = client.text_to_image(prompt, model=hf_model_id)
+        encoded_prompt = urllib.parse.quote(prompt)
+        url = f"https://gen.pollinations.ai/image/{encoded_prompt}"
         
-        buffered = io.BytesIO()
-        image.save(buffered, format="PNG")
-        img_str = base64.b64encode(buffered.getvalue()).decode()
+        params = {
+            "model": model_id, 
+            "width": 1024,
+            "height": 1024,
+            "nologo": "true",
+            "key": api_key
+        }
+        
+        res = requests.get(url, params=params, timeout=60)
+        res.raise_for_status()
+
+        img_str = base64.b64encode(res.content).decode()
 
         conn = get_db()
         c = conn.cursor()
-        c.execute("INSERT INTO images (username, prompt, created_at) VALUES (%s, %s, %s)",
+        c.execute(f"INSERT INTO images (username, prompt, created_at) VALUES ({P()}, {P()}, {P()})",
                      (session['username'], prompt, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
         conn.commit()
         c.close()
@@ -342,7 +343,7 @@ def generate_image():
         return jsonify({"image_base64": f"data:image/png;base64,{img_str}"})
 
     except Exception as e:
-        return jsonify({"error": f"Lỗi tạo ảnh: {str(e)}"}), 502
+        return jsonify({"error": f"Lỗi tạo ảnh từ Pollinations: {str(e)}"}), 502
 
 # ==========================================
 # 7. ROUTES: UPGRADE & ADMIN (DEV HUB)
@@ -362,11 +363,8 @@ def dev_hub():
         return jsonify({"success": False, "message": "Sai mật khẩu Admin!"})
 
     if session.get('is_admin'):
-        if not DATABASE_URL:
-            return "Lỗi: Chưa cấu hình DATABASE_URL", 500
-            
         conn = get_db()
-        c = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        c = get_cursor(conn)
         c.execute("SELECT * FROM users ORDER BY id DESC")
         users = c.fetchall()
         
@@ -401,15 +399,15 @@ def toggle_pro(user_id):
     data = request.json
     duration = float(data.get('duration', 0)) 
     conn = get_db()
-    c = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-    c.execute("SELECT is_pro FROM users WHERE id = %s", (user_id,))
+    c = get_cursor(conn)
+    c.execute(f"SELECT is_pro FROM users WHERE id = {P()}", (user_id,))
     user = c.fetchone()
     if user:
         if user['is_pro']:
-            c.execute("UPDATE users SET is_pro = 0, pro_expire = NULL WHERE id = %s", (user_id,))
+            c.execute(f"UPDATE users SET is_pro = 0, pro_expire = NULL WHERE id = {P()}", (user_id,))
         else:
             expire_str = 'forever' if duration <= 0 else (datetime.now() + timedelta(days=duration)).strftime("%Y-%m-%d %H:%M:%S")
-            c.execute("UPDATE users SET is_pro = 1, pro_expire = %s WHERE id = %s", (expire_str, user_id))
+            c.execute(f"UPDATE users SET is_pro = 1, pro_expire = {P()} WHERE id = {P()}", (expire_str, user_id))
         conn.commit()
     c.close()
     conn.close()
@@ -420,7 +418,7 @@ def toggle_pro(user_id):
 def delete_user(user_id):
     conn = get_db()
     c = conn.cursor()
-    c.execute("DELETE FROM users WHERE id = %s", (user_id,))
+    c.execute(f"DELETE FROM users WHERE id = {P()}", (user_id,))
     conn.commit()
     c.close()
     conn.close()
@@ -435,7 +433,7 @@ def change_password(user_id):
     conn = get_db()
     c = conn.cursor()
     hashed_pw = generate_password_hash(new_pw)
-    c.execute("UPDATE users SET password = %s WHERE id = %s", (hashed_pw, user_id))
+    c.execute(f"UPDATE users SET password = {P()} WHERE id = {P()}", (hashed_pw, user_id))
     conn.commit()
     c.close()
     conn.close()
