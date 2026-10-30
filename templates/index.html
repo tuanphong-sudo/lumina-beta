@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lumina AI</title>
-    <!-- Đã sửa lại icon chuẩn an toàn, không bị lỗi font -->
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%231e88e5'/%3E%3Cpath d='M55 15 L30 55 L48 55 L42 85 L72 42 L52 42 Z' fill='white'/%3E%3C/svg%3E" />
     
     <style>
@@ -13,7 +12,6 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; transition: background-color 0.3s, color 0.3s; }
         body { display: flex; height: 100vh; background: var(--bg-body); color: var(--text-main); overflow: hidden; }
         
-        /* SIDEBAR */
         .sidebar { width: 280px; background: var(--bg-sidebar); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; }
         .sidebar-header { padding: 20px; background: var(--primary); color: white; font-weight: bold; font-size: 18px; display: flex; justify-content: space-between; align-items: center; }
         .user-badge { font-size: 12px; background: {{ 'gold' if is_pro else '#fff' }}; color: {{ '#333' if is_pro else '#1e88e5' }}; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
@@ -31,7 +29,6 @@
         .btn-sidebar.logout { color: #c62828; }
         body.dark-mode .btn-sidebar.logout { color: #ef5350; background: #331111; }
         
-        /* MODAL SETTINGS */
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--modal-bg); display: none; justify-content: center; align-items: center; z-index: 1000; backdrop-filter: blur(2px); }
         .modal-overlay.active { display: flex; }
         .modal-content { background: var(--bg-sidebar); padding: 25px; border-radius: 12px; width: 320px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); border: 1px solid var(--border-color); }
@@ -47,7 +44,6 @@
         input:checked + .slider:before { transform: translateX(14px); }
         .btn-upgrade-modal { display: block; text-align: center; background: linear-gradient(45deg, #ff8f00, #ffb300); color: white; font-weight: bold; padding: 10px; border-radius: 8px; text-decoration: none; margin-top: 15px; }
         
-        /* MAIN CHAT */
         .main-chat { flex: 1; display: flex; flex-direction: column; background: var(--bg-chat); }
         .model-bar { padding: 10px 20px; background: var(--bg-model-bar); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; }
         .model-select-wrap { display: flex; align-items: center; gap: 10px; }
@@ -58,7 +54,6 @@
         .msg.user { align-self: flex-end; background: var(--msg-user-bg); color: var(--msg-user-text); border-bottom-right-radius: 4px; }
         .msg.bot { align-self: flex-start; background: var(--bg-msg-bot); color: var(--text-main); border: 1px solid var(--border-color); border-bottom-left-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         
-        /* MARKDOWN CSS */
         .msg.bot p { margin-bottom: 8px; }
         .msg.bot pre { background: var(--pre-bg); color: var(--pre-text); padding: 10px; border-radius: 8px; overflow-x: auto; margin: 10px 0; }
         .msg.bot code { font-family: monospace; background: var(--code-bg); padding: 2px 4px; border-radius: 4px; color: var(--text-main); }
@@ -66,13 +61,13 @@
         
         .input-bar { padding: 20px; background: var(--bg-input); border-top: 1px solid var(--border-color); display: flex; gap: 10px; }
         .input-bar input { flex: 1; padding: 15px; border: 1px solid var(--border-color); border-radius: 25px; outline: none; font-size: 15px; background: var(--bg-body); color: var(--text-main); }
-        .input-bar button { width: 50px; height: 50px; border-radius: 50%; border: none; background: var(--primary); color: white; font-size: 20px; cursor: pointer; }
+        .input-bar button { width: 50px; height: 50px; border-radius: 50%; border: none; background: var(--primary); color: white; font-size: 20px; cursor: pointer; display: flex; justify-content: center; align-items: center; }
         .input-bar button:disabled { background: #888; cursor: not-allowed; }
+        .btn-image { background: #ff9800 !important; margin-right: 5px; }
+        .btn-image:hover { background: #f57c00 !important; }
     </style>
 </head>
 <body>
-
-    <!-- SIDEBAR -->
     <div class="sidebar">
         <div class="sidebar-header"><span>⚡ Lumina</span><span class="user-badge">{{ 'PRO' if is_pro else 'LITE' }}</span></div>
         <button class="new-chat-btn" onclick="createNewChat()">➕ Cuộc trò chuyện mới</button>
@@ -83,8 +78,6 @@
             <a href="/logout" class="btn-sidebar logout">Đăng xuất</a>
         </div>
     </div>
-
-    <!-- MODAL SETTINGS -->
     <div class="modal-overlay" id="settingsModal">
         <div class="modal-content">
             <div class="modal-header"><span>⚙️ Cài đặt</span><span class="close-btn" onclick="toggleSettings()">✖</span></div>
@@ -92,8 +85,6 @@
             {% if not is_pro %}<a href="/upgrade" class="btn-upgrade-modal">🚀 Nâng cấp Lumina Pro</a>{% else %}<div style="text-align: center; font-size: 13px; color: gold; margin-top: 15px;">⭐ Bạn đang dùng bản Pro</div>{% endif %}
         </div>
     </div>
-
-    <!-- CHAT AREA -->
     <div class="main-chat">
         <div class="model-bar">
             <div class="model-select-wrap">
@@ -102,16 +93,15 @@
                     {% for m in models %}<option value="{{ m.id }}" {% if m.is_pro and not is_pro %}disabled>🔒 {{ m.name }} (Cần Pro){% else %}>{{ m.name }}{% endif %}</option>{% endfor %}
                 </select>
             </div>
-            <div class="quota-info">Giới hạn: <b>{{ '70' if is_pro else '30' }}</b> tin/ngày</div>
+            <div class="quota-info">Giới hạn: <b>{{ '120' if is_pro else '50' }}</b> tin/ngày</div>
         </div>
         <div class="chat-box" id="chatBox"></div>
         <form class="input-bar" id="chatForm">
-            <input type="text" id="msgInput" placeholder="Nhập tin nhắn..." autocomplete="off">
+            <input type="text" id="msgInput" placeholder="Nhập tin nhắn hoặc mô tả ảnh..." autocomplete="off">
+            <button type="button" class="btn-image" id="imgBtn" title="Tạo ảnh từ mô tả">🎨</button>
             <button type="submit" id="sendBtn">➤</button>
         </form>
     </div>
-
-    <!-- TOÀN BỘ JAVASCRIPT -->
     <script>
         const chatBox = document.getElementById('chatBox');
         const form = document.getElementById('chatForm');
@@ -123,8 +113,7 @@
         const settingsModal = document.getElementById('settingsModal');
         const username = "{{ username }}";
         
-        let chatSessions = []; 
-        let currentSessionId = null; 
+        let chatSessions = []; let currentSessionId = null; 
 
         function createNewChat() {
             const newSession = { id: Date.now().toString(), title: "Đoạn chat mới", messages: [] };
@@ -155,7 +144,7 @@
             chatBox.innerHTML = '';
             const session = chatSessions.find(s => s.id === currentSessionId);
             if (!session || session.messages.length === 0) {
-                chatBox.innerHTML = `<div class="msg bot">Xin chào <b>${username}</b>! Tôi là Lumina AI. Hãy chọn model ở thanh bên trên và bắt đầu trò chuyện nhé.</div>`;
+                chatBox.innerHTML = `<div class="msg bot">Xin chào <b>${username}</b>! Tôi là Lumina AI. Hãy chọn model ở thanh bên trên và bắt đầu trò chuyện hoặc tạo ảnh nhé.</div>`;
                 return;
             }
             session.messages.forEach(msg => {
@@ -170,10 +159,10 @@
             if (e.target.checked) { document.body.classList.add('dark-mode'); localStorage.setItem('lumina_dark_mode', 'true'); }
             else { document.body.classList.remove('dark-mode'); localStorage.setItem('lumina_dark_mode', 'false'); }
         });
-        
         function toggleSettings() { settingsModal.classList.toggle('active'); }
         settingsModal.addEventListener('click', (e) => { if(e.target === settingsModal) toggleSettings(); });
 
+        // Xử lý Gửi tin nhắn Chat
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             const text = input.value.trim(); if(!text) return;
@@ -212,7 +201,45 @@
             }
         });
 
-        // Khởi tạo
+        // Xử lý Tạo ảnh bằng Hugging Face
+        document.getElementById('imgBtn').addEventListener('click', async () => {
+            const prompt = input.value.trim();
+            if(!prompt) return alert("Vui lòng nhập mô tả ảnh bạn muốn tạo!");
+
+            if (!currentSessionId) createNewChat();
+            const session = chatSessions.find(s => s.id === currentSessionId);
+
+            session.messages.push({ role: 'user', text: prompt, html: `🎨 Tạo ảnh: ${prompt}` });
+            input.value = ''; renderChatBox();
+
+            const statusDiv = document.createElement('div'); statusDiv.className = 'msg bot'; 
+            statusDiv.innerHTML = '<span style="color:#ff9800;">🎨 Đang vẽ ảnh... (Có thể mất vài giây)</span>';
+            chatBox.appendChild(statusDiv); chatBox.scrollTop = chatBox.scrollHeight;
+
+            try {
+                const res = await fetch('/api/generate-image', {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ prompt: prompt })
+                });
+                const data = await res.json();
+                statusDiv.remove();
+
+                if(data.error) {
+                    const errorHtml = `<span style="color:#ef5350;">⚠️ ${data.error}</span>`;
+                    session.messages.push({ role: 'bot', text: data.error, html: errorHtml });
+                } else {
+                    const htmlContent = `<img src="${data.image_base64}" style="max-width: 100%; border-radius: 12px; margin-top: 5px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" />`;
+                    session.messages.push({ role: 'bot', text: "[Hình ảnh được tạo]", html: htmlContent });
+                }
+                renderChatBox(); renderRecentList();
+            } catch (err) {
+                statusDiv.remove();
+                const errorHtml = `<span style="color:#ef5350;">⚠️ Lỗi kết nối server</span>`;
+                session.messages.push({ role: 'bot', text: "Lỗi kết nối", html: errorHtml });
+                renderChatBox();
+            }
+        });
+
         createNewChat();
     </script>
 </body>

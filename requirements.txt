@@ -1,5 +1,9 @@
-flask==3.0.0
-python-dotenv==1.0.0
-requests==2.31.0
-markdown==3.5.1
-gunicorn==23.0.0
+flask
+python-dotenv
+requests
+markdown
+werkzeug
+gunicorn
+huggingface_hub
+Pillow
+psycopg2-binary

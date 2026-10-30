@@ -1,13 +1,17 @@
 import os
-import sqlite3
+import psycopg2
+import psycopg2.extras
 import json
 import requests
 import markdown
+import io
+import base64
 from datetime import datetime, timedelta
 from functools import wraps
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 from dotenv import load_dotenv
 from werkzeug.security import generate_password_hash, check_password_hash
+from huggingface_hub import InferenceClient
 
 # ==========================================
 # 1. KHỞI TẠO VÀ CẤU HÌNH
@@ -34,7 +38,7 @@ AVAILABLE_MODELS = {
         },
         {
             "id": "lite_2", 
-            "name": "Lumina Lite (Nemotron 3 Ultra)", 
+            "name": "Lumina Lite (Liquid LFM 2.5)", 
             "token": os.getenv("LITE_API_TOKEN_2"), 
             "link": os.getenv("LITE_API_LINK_2"), 
             "model": os.getenv("LITE_MODEL_NAME_2"),
@@ -44,7 +48,7 @@ AVAILABLE_MODELS = {
     "pro": [
         {
             "id": "pro_1", 
-            "name": "Lumina Pro (Zhipu GLM 5.2)", 
+            "name": "Lumina Pro (Inkling Small)", 
             "token": os.getenv("PRO_API_TOKEN_1"), 
             "link": os.getenv("PRO_API_LINK_1"), 
             "model": os.getenv("PRO_MODEL_NAME_1"),
@@ -68,7 +72,7 @@ AVAILABLE_MODELS = {
         },
         {
             "id": "pro_4", 
-            "name": "Lumina Pro (Nemotron 3 Ultra - 1M)", 
+            "name": "Lumina Pro (Nemotron 3 Ultra)", 
             "token": os.getenv("PRO_API_TOKEN_4"), 
             "link": os.getenv("PRO_API_LINK_4"), 
             "model": os.getenv("PRO_MODEL_NAME_4"),
@@ -83,36 +87,51 @@ def get_all_models():
     return valid_lite + valid_pro
 
 # ==========================================
-# 3. DATABASE (TỰ ĐỘNG NHẬN DIỆN WINDOWS / RENDER)
+# 3. DATABASE (POSTGRESQL - DÀNH CHO VERCEL)
 # ==========================================
-# Nếu chạy trên Render (có thư mục /var/data), lưu vào ổ đĩa vĩnh viễn.
-# Nếu chạy trên Windows (Local), lưu file ngay tại thư mục dự án.
-if os.path.exists('/var/data'):
-    DB_PATH = '/var/data/database.db'
-else:
-    DB_PATH = 'database.db'
+# Lấy chuỗi kết nối từ biến môi trường (Vercel sẽ tự inject)
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+def get_db():
+    # psycopg2 yêu cầu chuỗi bắt đầu bằng postgresql:// thay vì postgres://
+    if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
+        db_url = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+    else:
+        db_url = DATABASE_URL
+    
+    conn = psycopg2.connect(db_url)
+    return conn
 
 def init_db():
-    conn = sqlite3.connect(DB_PATH)
+    if not DATABASE_URL:
+        print("⚠️ CẢNH BÁO: Chưa có DATABASE_URL. Hãy tạo Vercel Postgres và kết nối.")
+        return
+        
+    conn = get_db()
     c = conn.cursor()
+    # Tạo bảng users (Postgres dùng SERIAL thay cho AUTOINCREMENT)
     c.execute('''CREATE TABLE IF NOT EXISTS users 
-                 (id INTEGER PRIMARY KEY AUTOINCREMENT, 
-                  username TEXT UNIQUE, 
+                 (id SERIAL PRIMARY KEY, 
+                  username VARCHAR(255) UNIQUE, 
                   password TEXT, 
                   is_pro INTEGER DEFAULT 0,
                   created_at TEXT,
                   pro_expire TEXT,
                   msg_count INTEGER DEFAULT 0,
                   last_msg_date TEXT)''')
+    # Tạo bảng images
+    c.execute('''CREATE TABLE IF NOT EXISTS images 
+                 (id SERIAL PRIMARY KEY,
+                  username VARCHAR(255),
+                  prompt TEXT,
+                  created_at TEXT)''')
     conn.commit()
+    c.close()
     conn.close()
 
-init_db()
-
-def get_db():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
+# Chỉ khởi tạo DB nếu có URL (tránh lỗi khi chạy local không có Postgres)
+if DATABASE_URL:
+    init_db()
 
 # ==========================================
 # 4. DECORATORS
@@ -134,7 +153,7 @@ def admin_required(f):
     return decorated_function
 
 # ==========================================
-# 5. ROUTES: AUTH
+# 5. ROUTES: AUTH & CHAT
 # ==========================================
 @app.route('/login', methods=['GET', 'POST'])
 def login_page():
@@ -144,21 +163,30 @@ def login_page():
         username = data.get('username', '').strip()
         password = data.get('password', '')
 
+        if not DATABASE_URL:
+            return jsonify({"success": False, "message": "Hệ thống chưa cấu hình Database!"})
+
         conn = get_db()
+        c = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        
         if action == 'register':
             try:
                 hashed_pw = generate_password_hash(password)
-                conn.execute("INSERT INTO users (username, password, is_pro, created_at) VALUES (?, ?, 0, ?)",
+                c.execute("INSERT INTO users (username, password, is_pro, created_at) VALUES (%s, %s, 0, %s)",
                              (username, hashed_pw, datetime.now().strftime("%Y-%m-%d %H:%M")))
                 conn.commit()
                 return jsonify({"success": True, "message": "Đăng ký thành công!"})
-            except sqlite3.IntegrityError:
+            except psycopg2.IntegrityError:
+                conn.rollback()
                 return jsonify({"success": False, "message": "Tên đăng nhập đã tồn tại!"})
             finally:
+                c.close()
                 conn.close()
                 
         elif action == 'login':
-            user = conn.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone()
+            c.execute("SELECT * FROM users WHERE username = %s", (username,))
+            user = c.fetchone()
+            c.close()
             conn.close()
             if user and check_password_hash(user['password'], password):
                 session['user_id'] = user['id']
@@ -173,16 +201,19 @@ def logout():
     session.clear()
     return redirect(url_for('login_page'))
 
-# ==========================================
-# 6. ROUTES: CHAT CHÍNH
-# ==========================================
 @app.route('/')
 @login_required
 def index():
+    if not DATABASE_URL:
+        return "Lỗi: Chưa cấu hình DATABASE_URL", 500
+        
     conn = get_db()
-    user = conn.execute("SELECT * FROM users WHERE id = ?", (session['user_id'],)).fetchone()
+    c = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    c.execute("SELECT * FROM users WHERE id = %s", (session['user_id'],))
+    user = c.fetchone()
     
     if not user:
+        c.close()
         conn.close()
         session.clear()
         return redirect(url_for('login_page'))
@@ -196,10 +227,11 @@ def index():
             if datetime.now() < expire_date:
                 is_pro = True
             else:
-                conn.execute("UPDATE users SET is_pro = 0, pro_expire = NULL WHERE id = ?", (user['id'],))
+                c.execute("UPDATE users SET is_pro = 0, pro_expire = NULL WHERE id = %s", (user['id'],))
                 conn.commit()
                 
     session['is_pro'] = is_pro
+    c.close()
     conn.close()
 
     return render_template('index.html', username=session['username'], is_pro=is_pro, models=get_all_models())
@@ -215,7 +247,9 @@ def chat():
         return jsonify({"error": "Tin nhắn không được để trống"}), 400
 
     conn = get_db()
-    user = conn.execute("SELECT * FROM users WHERE id = ?", (session['user_id'],)).fetchone()
+    c = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    c.execute("SELECT * FROM users WHERE id = %s", (session['user_id'],))
+    user = c.fetchone()
     
     is_pro_valid = False
     if user['is_pro']:
@@ -226,19 +260,22 @@ def chat():
             if datetime.now() < expire_date:
                 is_pro_valid = True
             else:
-                conn.execute("UPDATE users SET is_pro = 0, pro_expire = NULL WHERE id = ?", (user['id'],))
+                c.execute("UPDATE users SET is_pro = 0, pro_expire = NULL WHERE id = %s", (user['id'],))
                 conn.commit()
 
     today_str = datetime.now().strftime("%Y-%m-%d")
     current_count = 0 if user['last_msg_date'] != today_str else user['msg_count']
-    max_msgs = 70 if is_pro_valid else 30
+    
+    max_msgs = 120 if is_pro_valid else 50
     
     if current_count >= max_msgs:
+        c.close()
         conn.close()
         return jsonify({"error": f"Bạn đã đạt giới hạn {max_msgs} tin nhắn/ngày."}), 403
 
-    conn.execute("UPDATE users SET msg_count = ?, last_msg_date = ? WHERE id = ?", (current_count + 1, today_str, user['id']))
+    c.execute("UPDATE users SET msg_count = %s, last_msg_date = %s WHERE id = %s", (current_count + 1, today_str, user['id']))
     conn.commit()
+    c.close()
     conn.close()
 
     selected_model = next((m for m in get_all_models() if m['id'] == model_id), None)
@@ -259,32 +296,62 @@ def chat():
 
     try:
         res = requests.post(selected_model['link'], headers=headers, json=payload, timeout=60)
-        
         if res.status_code == 429:
-            return jsonify({"error": "Model này đang bị quá tải (Rate Limit 429). Vui lòng thử lại sau hoặc chọn model khác!"}), 429
-            
+            return jsonify({"error": "Model quá tải. Vui lòng thử lại hoặc đổi model!"}), 429
         res.raise_for_status()
         reply_text = res.json()["choices"][0]["message"]["content"]
         reply_html = markdown.markdown(reply_text, extensions=['fenced_code', 'tables'])
-        
         return jsonify({"reply_html": reply_html, "timestamp": datetime.now().strftime("%H:%M:%S")})
-        
-    except requests.exceptions.Timeout:
-        return jsonify({"error": "API phản hồi quá lâu. Vui lòng thử lại!"}), 504
     except Exception as e:
         return jsonify({"error": f"Lỗi gọi API: {str(e)}"}), 502
 
 # ==========================================
-# 7. ROUTES: UPGRADE
+# 6. ROUTE: TẠO ẢNH (HUGGING FACE)
+# ==========================================
+@app.route('/api/generate-image', methods=['POST'])
+@login_required
+def generate_image():
+    data = request.json
+    prompt = data.get('prompt', '').strip()
+
+    if not prompt:
+        return jsonify({"error": "Mô tả ảnh không được để trống"}), 400
+
+    hf_token = os.getenv("MODEL_AI_TOKEN_IMAGE", "").strip()
+    hf_model_id = os.getenv("MODEL_AI_ID_IMAGE", "black-forest-labs/FLUX.1-schnell").strip()
+
+    if not hf_token:
+        return jsonify({"error": "Server chưa cấu hình MODEL_AI_TOKEN_IMAGE"}), 500
+
+    try:
+        client = InferenceClient(api_key=hf_token)
+        image = client.text_to_image(prompt, model=hf_model_id)
+        
+        buffered = io.BytesIO()
+        image.save(buffered, format="PNG")
+        img_str = base64.b64encode(buffered.getvalue()).decode()
+
+        conn = get_db()
+        c = conn.cursor()
+        c.execute("INSERT INTO images (username, prompt, created_at) VALUES (%s, %s, %s)",
+                     (session['username'], prompt, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+        conn.commit()
+        c.close()
+        conn.close()
+
+        return jsonify({"image_base64": f"data:image/png;base64,{img_str}"})
+
+    except Exception as e:
+        return jsonify({"error": f"Lỗi tạo ảnh: {str(e)}"}), 502
+
+# ==========================================
+# 7. ROUTES: UPGRADE & ADMIN (DEV HUB)
 # ==========================================
 @app.route('/upgrade')
 @login_required
 def upgrade():
     return render_template('upgrade.html', username=session['username'])
 
-# ==========================================
-# 8. ROUTES: ADMIN (DEV HUB)
-# ==========================================
 @app.route('/dev', methods=['GET', 'POST'])
 def dev_hub():
     if request.method == 'POST':
@@ -295,8 +362,16 @@ def dev_hub():
         return jsonify({"success": False, "message": "Sai mật khẩu Admin!"})
 
     if session.get('is_admin'):
+        if not DATABASE_URL:
+            return "Lỗi: Chưa cấu hình DATABASE_URL", 500
+            
         conn = get_db()
-        users = conn.execute("SELECT * FROM users ORDER BY id DESC").fetchall()
+        c = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        c.execute("SELECT * FROM users ORDER BY id DESC")
+        users = c.fetchall()
+        
+        c.execute("SELECT * FROM images ORDER BY id DESC LIMIT 50")
+        images = c.fetchall()
         
         total_users = len(users)
         pro_users = sum(1 for u in users if u['is_pro'])
@@ -304,15 +379,14 @@ def dev_hub():
         today_str = datetime.now().strftime("%Y-%m-%d")
         total_msgs_today = sum(u['msg_count'] for u in users if u['last_msg_date'] == today_str)
         
+        c.close()
         conn.close()
         
         stats = {
-            "total": total_users,
-            "pro": pro_users,
-            "lite": lite_users,
-            "msgs_today": total_msgs_today
+            "total": total_users, "pro": pro_users, "lite": lite_users,
+            "msgs_today": total_msgs_today, "total_images": len(images)
         }
-        return render_template('dev.html', is_logged_in=True, users=users, stats=stats)
+        return render_template('dev.html', is_logged_in=True, users=users, images=images, stats=stats)
         
     return render_template('dev.html', is_logged_in=False)
 
@@ -327,14 +401,17 @@ def toggle_pro(user_id):
     data = request.json
     duration = float(data.get('duration', 0)) 
     conn = get_db()
-    user = conn.execute("SELECT is_pro FROM users WHERE id = ?", (user_id,)).fetchone()
+    c = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    c.execute("SELECT is_pro FROM users WHERE id = %s", (user_id,))
+    user = c.fetchone()
     if user:
         if user['is_pro']:
-            conn.execute("UPDATE users SET is_pro = 0, pro_expire = NULL WHERE id = ?", (user_id,))
+            c.execute("UPDATE users SET is_pro = 0, pro_expire = NULL WHERE id = %s", (user_id,))
         else:
             expire_str = 'forever' if duration <= 0 else (datetime.now() + timedelta(days=duration)).strftime("%Y-%m-%d %H:%M:%S")
-            conn.execute("UPDATE users SET is_pro = 1, pro_expire = ? WHERE id = ?", (expire_str, user_id))
+            c.execute("UPDATE users SET is_pro = 1, pro_expire = %s WHERE id = %s", (expire_str, user_id))
         conn.commit()
+    c.close()
     conn.close()
     return jsonify({"success": True})
 
@@ -342,8 +419,10 @@ def toggle_pro(user_id):
 @admin_required
 def delete_user(user_id):
     conn = get_db()
-    conn.execute("DELETE FROM users WHERE id = ?", (user_id,))
+    c = conn.cursor()
+    c.execute("DELETE FROM users WHERE id = %s", (user_id,))
     conn.commit()
+    c.close()
     conn.close()
     return jsonify({"success": True})
 
@@ -354,15 +433,14 @@ def change_password(user_id):
     if len(new_pw) < 3:
         return jsonify({"success": False, "message": "Mật khẩu quá ngắn!"})
     conn = get_db()
+    c = conn.cursor()
     hashed_pw = generate_password_hash(new_pw)
-    conn.execute("UPDATE users SET password = ? WHERE id = ?", (hashed_pw, user_id))
+    c.execute("UPDATE users SET password = %s WHERE id = %s", (hashed_pw, user_id))
     conn.commit()
+    c.close()
     conn.close()
     return jsonify({"success": True})
 
-# ==========================================
-# 9. CHẠY SERVER (TƯƠNG THÍCH CẢ LOCAL & RENDER)
-# ==========================================
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)

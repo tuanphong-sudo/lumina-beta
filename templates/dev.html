@@ -38,9 +38,10 @@
         .stat-card.pro .value { color: gold; }
         .stat-card.lite .value { color: #4caf50; }
         .stat-card.msg .value { color: #ff9800; }
+        .stat-card.img .value { color: #e91e63; }
 
         /* TABLE */
-        table { width: 100%; border-collapse: collapse; background: #1e1e1e; border-radius: 12px; overflow: hidden; }
+        table { width: 100%; border-collapse: collapse; background: #1e1e1e; border-radius: 12px; overflow: hidden; margin-bottom: 20px; }
         th, td { padding: 15px; text-align: left; border-bottom: 1px solid #333; }
         th { background: #2a2a2a; color: #aaa; font-weight: 500; }
         tr:hover { background: #252525; }
@@ -71,12 +72,16 @@
         .login-box input { width: 100%; padding: 12px; margin: 15px 0; background: #2a2a2a; border: 1px solid #444; color: white; border-radius: 8px; outline: none; }
         .login-box button { width: 100%; padding: 12px; background: #1e88e5; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
         .login-box button:hover { background: #1565c0; }
+        
+        /* IMAGE GALLERY */
+        .img-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
+        .img-card { background: #2a2a2a; border-radius: 8px; padding: 10px; border: 1px solid #444; }
+        .img-card p { font-size: 12px; color: #aaa; margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     </style>
 </head>
 <body>
 
     {% if not is_logged_in %}
-        <!-- FORM ĐĂNG NHẬP -->
         <div class="login-container">
             <div class="login-box">
                 <h1 style="color:#1e88e5; margin-bottom: 10px;">⚡ Dev Access</h1>
@@ -97,12 +102,12 @@
             }
         </script>
     {% else %}
-        <!-- GIAO DIỆN CHÍNH -->
         <div class="sidebar">
             <div class="sidebar-header">⚡ Lumina Admin</div>
             <div class="sidebar-menu">
                 <div class="menu-item active" onclick="switchTab('dashboard', this)">📊 Tổng quan</div>
                 <div class="menu-item" onclick="switchTab('users', this)">👥 Quản lý User</div>
+                <div class="menu-item" onclick="switchTab('images', this)">🖼️ Kho ảnh AI</div>
                 <div class="menu-item" onclick="switchTab('config', this)">⚙️ Cấu hình</div>
             </div>
             <div class="sidebar-footer">
@@ -135,6 +140,10 @@
                         <div class="stat-card msg">
                             <h3>Tin Nhắn Hôm Nay</h3>
                             <div class="value">{{ stats.msgs_today }}</div>
+                        </div>
+                        <div class="stat-card img">
+                            <h3>Ảnh Đã Tạo</h3>
+                            <div class="value">{{ stats.total_images }}</div>
                         </div>
                     </div>
                     <h3 style="margin-bottom: 15px; color:#fff;">Hoạt động gần đây</h3>
@@ -208,17 +217,36 @@
                     </table>
                 </div>
 
+                <!-- TAB IMAGES -->
+                <div id="tab-images" class="tab-pane">
+                    <h3 style="margin-bottom: 15px; color:#fff;">Lịch sử tạo ảnh (50 ảnh gần nhất)</h3>
+                    <div class="img-grid">
+                        {% for img in images %}
+                        <div class="img-card">
+                            <p>👤 {{ img['username'] }}</p>
+                            <p>✍️ {{ img['prompt'] }}</p>
+                            <p style="color:#1e88e5;">🕘 {{ img['created_at'] }}</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
                 <!-- TAB CONFIG -->
                 <div id="tab-config" class="tab-pane">
                     <div class="info-box">
                         <h3>🧠 Mô hình AI đang hoạt động</h3>
-                        <p>Gói Lite: <span>Groq GPT-OSS 20B</span></p>
-                        <p>Gói Pro: <span>Zhipu GLM 5.2, Groq GPT-OSS 120B, Qwen 3.8 27B</span></p>
+                        <p>Gói Lite: <span>Groq GPT-OSS 20B, Liquid LFM 2.5</span></p>
+                        <p>Gói Pro: <span>Inkling Small, Groq GPT-OSS 120B, Qwen 3.8, Nemotron 3 Ultra</span></p>
+                    </div>
+                    <div class="info-box">
+                        <h3>🎨 Mô hình tạo ảnh</h3>
+                        <p>API: <span>Hugging Face Inference API</span></p>
+                        <p>Model: <span>FLUX.1-schnell</span></p>
                     </div>
                     <div class="info-box">
                         <h3>📊 Giới hạn tin nhắn</h3>
-                        <p>Tài khoản Lite: <span>30 tin nhắn / ngày</span></p>
-                        <p>Tài khoản Pro: <span>70 tin nhắn / ngày</span></p>
+                        <p>Tài khoản Lite: <span>50 tin nhắn / ngày</span></p>
+                        <p>Tài khoản Pro: <span>120 tin nhắn / ngày</span></p>
                     </div>
                 </div>
 
@@ -233,7 +261,7 @@
                 document.getElementById('tab-' + tabId).classList.add('active');
                 el.classList.add('active');
                 
-                const titles = { 'dashboard': 'Tổng quan hệ thống', 'users': 'Quản lý Người dùng', 'config': 'Cấu hình Hệ thống' };
+                const titles = { 'dashboard': 'Tổng quan hệ thống', 'users': 'Quản lý Người dùng', 'images': 'Kho ảnh AI', 'config': 'Cấu hình Hệ thống' };
                 document.getElementById('pageTitle').innerText = titles[tabId];
             }
 
