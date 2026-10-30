@@ -1,7 +1,5 @@
 import os
 import sqlite3
-import psycopg2
-import psycopg2.extras
 import requests
 import markdown
 import base64
@@ -11,6 +9,14 @@ from functools import wraps
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 from dotenv import load_dotenv
 from werkzeug.security import generate_password_hash, check_password_hash
+
+# Khai báo psycopg2 an toàn (đề phòng lỗi thiếu thư viện trên môi trường build)
+try:
+    import psycopg2
+    import psycopg2.extras
+    HAS_PSYCOPG2 = True
+except ImportError:
+    HAS_PSYCOPG2 = False
 
 # ==========================================
 # 1. KHỞI TẠO VÀ CẤU HÌNH
@@ -36,7 +42,7 @@ AVAILABLE_MODELS = {
         },
         {
             "id": "lite_2", 
-            "name": "Lumina Lite (Cohere)", 
+            "name": "Lumina Lite (Cohere North Mini Code)", 
             "token": os.getenv("LITE_API_TOKEN_2"), 
             "link": os.getenv("LITE_API_LINK_2"), 
             "model": os.getenv("LITE_MODEL_NAME_2"),
@@ -46,7 +52,7 @@ AVAILABLE_MODELS = {
     "pro": [
         {
             "id": "pro_1", 
-            "name": "Lumina Pro (Nemotron 3 Nano Omni)", 
+            "name": "Lumina Pro (Nemotron Nano Omni Reasoning)", 
             "token": os.getenv("PRO_API_TOKEN_1"), 
             "link": os.getenv("PRO_API_LINK_1"), 
             "model": os.getenv("PRO_MODEL_NAME_1"),
@@ -85,10 +91,11 @@ def get_all_models():
     return valid_lite + valid_pro
 
 # ==========================================
-# 3. DATABASE (TỰ ĐỘNG NHẬN DIỆN SQLITE / POSTGRES)
+# 3. DATABASE (TỰ ĐỘNG NHẬN DIỆN POSTGRES / SQLITE)
 # ==========================================
 DATABASE_URL = os.getenv("DATABASE_URL")
-IS_POSTGRES = bool(DATABASE_URL)
+# Chỉ dùng Postgres nếu có URL VÀ thư viện psycopg2 đã cài thành công
+IS_POSTGRES = bool(DATABASE_URL) and HAS_PSYCOPG2
 
 def get_db():
     if IS_POSTGRES:
@@ -96,7 +103,9 @@ def get_db():
         conn = psycopg2.connect(db_url)
         return conn
     else:
-        conn = sqlite3.connect('database.db')
+        # Dự phòng: Dùng SQLite ở thư mục /tmp (Vercel) hoặc file local (Windows)
+        db_path = '/tmp/database.db' if os.path.exists('/var/data') or os.environ.get('VERCEL') else 'database.db'
+        conn = sqlite3.connect(db_path)
         conn.row_factory = sqlite3.Row
         return conn
 
