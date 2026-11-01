@@ -2,81 +2,120 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Dev Hub - Lumina AI</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%231e88e5'/%3E%3Cpath d='M55 15 L30 55 L48 55 L42 85 L72 42 L52 42 Z' fill='white'/%3E%3C/svg%3E" />
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
-        body { background: #121212; color: #e0e0e0; display: flex; height: 100vh; overflow: hidden; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; -webkit-tap-highlight-color: transparent; }
+        html, body { width: 100%; height: 100%; height: 100dvh; overflow: hidden; background: #121212; color: #e0e0e0; position: fixed; inset: 0; }
+        body { display: flex; }
         
         /* SIDEBAR */
-        .sidebar { width: 240px; background: #1e1e1e; border-right: 1px solid #333; display: flex; flex-direction: column; }
-        .sidebar-header { padding: 20px; background: #1e88e5; color: white; font-weight: bold; font-size: 20px; text-align: center; }
-        .sidebar-menu { flex: 1; padding: 20px 10px; display: flex; flex-direction: column; gap: 5px; }
-        .menu-item { padding: 12px 15px; border-radius: 8px; cursor: pointer; color: #aaa; transition: 0.2s; font-weight: 500; }
+        .sidebar { width: 240px; height: 100%; background: #1e1e1e; border-right: 1px solid #333; display: flex; flex-direction: column; flex-shrink: 0; z-index: 1000; transition: transform 0.3s ease; }
+        .sidebar-header { padding: 20px; background: #1e88e5; color: white; font-weight: bold; font-size: 20px; text-align: center; flex-shrink: 0; }
+        .sidebar-menu { flex: 1; padding: 20px 10px; display: flex; flex-direction: column; gap: 6px; overflow-y: auto; }
+        .menu-item { padding: 12px 15px; border-radius: 8px; cursor: pointer; color: #aaa; transition: 0.2s; font-weight: 500; font-size: 14px; }
         .menu-item:hover { background: #2a2a2a; color: white; }
         .menu-item.active { background: #1e88e5; color: white; }
-        .sidebar-footer { padding: 20px; border-top: 1px solid #333; }
+        .sidebar-footer { padding: 15px; border-top: 1px solid #333; flex-shrink: 0; padding-bottom: max(15px, env(safe-area-inset-bottom)); }
         .btn-logout { display: block; text-align: center; padding: 10px; background: #c62828; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; transition: 0.2s; }
         .btn-logout:hover { background: #b71c1c; }
         
         /* MAIN CONTENT */
-        .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-        .top-bar { padding: 20px 30px; background: #1e1e1e; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; }
-        .top-bar h2 { color: #fff; font-size: 20px; }
+        .main-content { flex: 1; min-width: 0; height: 100%; display: flex; flex-direction: column; overflow: hidden; }
+        .top-bar { padding: 15px 25px; background: #1e1e1e; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-shrink: 0; padding-top: max(15px, env(safe-area-inset-top)); }
+        .top-bar h2 { color: #fff; font-size: 19px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .mobile-menu-btn { display: none; background: transparent; border: none; color: white; font-size: 24px; cursor: pointer; }
         
-        .content-area { flex: 1; padding: 30px; overflow-y: auto; }
+        .content-area { flex: 1; min-height: 0; padding: 25px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
         .tab-pane { display: none; }
-        .tab-pane.active { display: block; animation: fadeIn 0.3s; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        .tab-pane.active { display: block; animation: fadeIn 0.25s; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 
         /* DASHBOARD CARDS */
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
-        .stat-card { background: #1e1e1e; padding: 20px; border-radius: 12px; border: 1px solid #333; }
-        .stat-card h3 { font-size: 14px; color: #aaa; margin-bottom: 10px; }
-        .stat-card .value { font-size: 32px; font-weight: bold; color: #1e88e5; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 15px; margin-bottom: 25px; }
+        .stat-card { background: #1e1e1e; padding: 18px; border-radius: 12px; border: 1px solid #333; }
+        .stat-card h3 { font-size: 13px; color: #aaa; margin-bottom: 8px; }
+        .stat-card .value { font-size: 28px; font-weight: bold; color: #1e88e5; }
         .stat-card.pro .value { color: gold; }
         .stat-card.lite .value { color: #4caf50; }
         .stat-card.msg .value { color: #ff9800; }
         .stat-card.img .value { color: #e91e63; }
+        .stat-card.chat .value { color: #00bcd4; }
+
+        /* TOOLBAR & SEARCH */
+        .toolbar { display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; align-items: center; margin-bottom: 15px; background: #1e1e1e; padding: 15px; border-radius: 12px; border: 1px solid #333; }
+        .search-input, .select-filter { padding: 9px 12px; background: #2a2a2a; border: 1px solid #444; color: white; border-radius: 8px; outline: none; font-size: 14px; }
+        .search-input { flex: 1; min-width: 180px; }
 
         /* TABLE */
-        table { width: 100%; border-collapse: collapse; background: #1e1e1e; border-radius: 12px; overflow: hidden; margin-bottom: 20px; }
-        th, td { padding: 15px; text-align: left; border-bottom: 1px solid #333; }
-        th { background: #2a2a2a; color: #aaa; font-weight: 500; }
+        .table-wrap { width: 100%; overflow-x: auto; background: #1e1e1e; border-radius: 12px; border: 1px solid #333; margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; min-width: 650px; }
+        th, td { padding: 13px 15px; text-align: left; border-bottom: 1px solid #333; font-size: 14px; }
+        th { background: #2a2a2a; color: #aaa; font-weight: 500; white-space: nowrap; }
         tr:hover { background: #252525; }
         
-        .badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; display: inline-block; }
         .badge-pro { background: rgba(255, 215, 0, 0.2); color: gold; border: 1px solid gold; }
         .badge-lite { background: rgba(76, 175, 80, 0.2); color: #4caf50; border: 1px solid #4caf50; }
         
         /* BUTTONS */
-        .btn { padding: 8px 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px; transition: 0.2s; }
-        .btn:hover { opacity: 0.8; }
+        .btn { padding: 7px 11px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px; transition: 0.2s; white-space: nowrap; }
+        .btn:hover { opacity: 0.85; }
         .btn-edit { background: #1e88e5; color: white; }
+        .btn-reset { background: #ff9800; color: white; }
         .btn-delete { background: rgba(198, 40, 40, 0.2); color: #ef5350; border: 1px solid #ef5350; }
         .btn-pro { background: gold; color: #000; }
         .btn-revoke { background: #c62828; color: white; }
         
-        input[type="number"] { width: 70px; padding: 6px; background: #333; color: white; border: 1px solid #555; border-radius: 4px; outline: none; margin-right: 5px;}
+        input[type="number"] { width: 65px; padding: 6px; background: #333; color: white; border: 1px solid #555; border-radius: 4px; outline: none; margin-right: 4px;}
         
+        /* CHAT LOGS LIST */
+        .chat-log-list { display: flex; flex-direction: column; gap: 12px; }
+        .chat-log-card { background: #1e1e1e; border: 1px solid #333; border-radius: 10px; padding: 15px; }
+        .chat-log-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #2a2a2a; font-size: 13px; }
+        .chat-user-tag { color: #1e88e5; font-weight: bold; cursor: pointer; }
+        .chat-model-tag { background: #2a2a2a; padding: 3px 8px; border-radius: 4px; color: #aaa; font-size: 12px; }
+        .chat-msg-block { margin-bottom: 8px; font-size: 14px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
+        .chat-msg-user { color: #fff; background: #252525; padding: 8px 12px; border-radius: 6px; border-left: 3px solid #1e88e5; }
+        .chat-msg-bot { color: #ccc; background: #181818; padding: 10px 12px; border-radius: 6px; border-left: 3px solid #4caf50; max-height: 220px; overflow-y: auto; }
+
+        /* IMAGE GALLERY */
+        .img-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 16px; }
+        .img-card { background: #1e1e1e; border-radius: 10px; padding: 12px; border: 1px solid #333; display: flex; flex-direction: column; gap: 8px; }
+        .img-preview { width: 100%; aspect-ratio: 1 / 1; object-fit: cover; border-radius: 8px; background: #2a2a2a; cursor: pointer; border: 1px solid #333; }
+        .img-no-preview { width: 100%; aspect-ratio: 1 / 1; border-radius: 8px; background: #252525; display: flex; align-items: center; justify-content: center; color: #666; font-size: 13px; text-align: center; padding: 10px; }
+        .img-card p { font-size: 12.5px; color: #bbb; word-break: break-word; }
+
         /* SETTINGS INFO */
-        .info-box { background: #1e1e1e; padding: 20px; border-radius: 12px; border: 1px solid #333; margin-bottom: 20px; }
+        .info-box { background: #1e1e1e; padding: 20px; border-radius: 12px; border: 1px solid #333; margin-bottom: 18px; }
         .info-box h3 { color: #1e88e5; margin-bottom: 10px; font-size: 16px; }
-        .info-box p { color: #aaa; margin-bottom: 8px; font-size: 14px; }
+        .info-box p { color: #aaa; margin-bottom: 8px; font-size: 14px; line-height: 1.5; }
         .info-box span { color: #fff; font-weight: bold; }
 
         /* LOGIN FORM */
-        .login-container { display: flex; justify-content: center; align-items: center; height: 100vh; width: 100vw; background: #121212; }
-        .login-box { background: #1e1e1e; padding: 40px; border-radius: 12px; width: 350px; text-align: center; border: 1px solid #333; }
-        .login-box input { width: 100%; padding: 12px; margin: 15px 0; background: #2a2a2a; border: 1px solid #444; color: white; border-radius: 8px; outline: none; }
-        .login-box button { width: 100%; padding: 12px; background: #1e88e5; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .login-container { display: flex; justify-content: center; align-items: center; height: 100%; width: 100%; background: #121212; padding: 15px; }
+        .login-box { background: #1e1e1e; padding: 35px; border-radius: 12px; width: 100%; max-width: 350px; text-align: center; border: 1px solid #333; }
+        .login-box input { width: 100%; padding: 12px; margin: 15px 0; background: #2a2a2a; border: 1px solid #444; color: white; border-radius: 8px; outline: none; font-size: 15px; }
+        .login-box button { width: 100%; padding: 12px; background: #1e88e5; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 15px; }
         .login-box button:hover { background: #1565c0; }
-        
-        /* IMAGE GALLERY */
-        .img-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
-        .img-card { background: #2a2a2a; border-radius: 8px; padding: 10px; border: 1px solid #444; }
-        .img-card p { font-size: 12px; color: #aaa; margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        /* LIGHTBOX XEM ẢNH PHÓNG TO */
+        .lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 3000; justify-content: center; align-items: center; flex-direction: column; padding: 20px; }
+        .lightbox.active { display: flex; }
+        .lightbox img { max-width: 92vw; max-height: 80dvh; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .lightbox-caption { color: #fff; margin-top: 12px; font-size: 14px; text-align: center; max-width: 600px; }
+
+        .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 999; }
+        .sidebar-overlay.active { display: block; }
+
+        @media (max-width: 768px) {
+            .sidebar { position: fixed; left: 0; top: 0; transform: translateX(-100%); }
+            .sidebar.active { transform: translateX(0); }
+            .mobile-menu-btn { display: block; }
+            .content-area { padding: 15px; }
+            .top-bar { padding: 12px 15px; }
+        }
     </style>
 </head>
 <body>
@@ -86,7 +125,7 @@
             <div class="login-box">
                 <h1 style="color:#1e88e5; margin-bottom: 10px;">⚡ Dev Access</h1>
                 <p style="color:#aaa; font-size: 14px;">Nhập mật khẩu Admin để truy cập</p>
-                <input type="password" id="pw" placeholder="Mật khẩu Admin">
+                <input type="password" id="pw" placeholder="Mật khẩu Admin" onkeydown="if(event.key==='Enter') login()">
                 <button onclick="login()">Đăng nhập</button>
             </div>
         </div>
@@ -102,13 +141,22 @@
             }
         </script>
     {% else %}
-        <div class="sidebar">
+        <div class="sidebar-overlay" id="devSidebarOverlay" onclick="toggleDevSidebar()"></div>
+
+        <!-- Lightbox phóng to ảnh -->
+        <div class="lightbox" id="imgLightbox" onclick="closeLightbox()">
+            <img id="lightboxImg" src="" alt="Preview">
+            <div class="lightbox-caption" id="lightboxCaption"></div>
+        </div>
+
+        <div class="sidebar" id="devSidebar">
             <div class="sidebar-header">⚡ Lumina Admin</div>
             <div class="sidebar-menu">
                 <div class="menu-item active" onclick="switchTab('dashboard', this)">📊 Tổng quan</div>
-                <div class="menu-item" onclick="switchTab('users', this)">👥 Quản lý User</div>
-                <div class="menu-item" onclick="switchTab('images', this)">🖼️ Kho ảnh AI</div>
-                <div class="menu-item" onclick="switchTab('config', this)">⚙️ Cấu hình</div>
+                <div class="menu-item" onclick="switchTab('users', this)">👥 Quản lý User ({{ stats.total }})</div>
+                <div class="menu-item" onclick="switchTab('chats', this)">💬 Lịch sử Chat ({{ stats.total_chats }})</div>
+                <div class="menu-item" onclick="switchTab('images', this)">🖼️ Kho ảnh AI ({{ stats.total_images }})</div>
+                <div class="menu-item" onclick="switchTab('config', this)">⚙️ Cấu hình hệ thống</div>
             </div>
             <div class="sidebar-footer">
                 <a href="/api/admin/logout" class="btn-logout">Đăng xuất Dev</a>
@@ -117,12 +165,15 @@
 
         <div class="main-content">
             <div class="top-bar">
-                <h2 id="pageTitle">Tổng quan hệ thống</h2>
-                <a href="/" style="color:#1e88e5; text-decoration:none; font-weight:bold;">← Về trang Chat</a>
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <button class="mobile-menu-btn" onclick="toggleDevSidebar()">☰</button>
+                    <h2 id="pageTitle">Tổng quan hệ thống</h2>
+                </div>
+                <a href="/" style="color:#1e88e5; text-decoration:none; font-weight:bold; font-size: 14px; white-space: nowrap;">← Về trang Chat</a>
             </div>
 
             <div class="content-area">
-                <!-- TAB DASHBOARD -->
+                <!-- TAB 1: DASHBOARD -->
                 <div id="tab-dashboard" class="tab-pane active">
                     <div class="stats-grid">
                         <div class="stat-card">
@@ -141,112 +192,199 @@
                             <h3>Tin Nhắn Hôm Nay</h3>
                             <div class="value">{{ stats.msgs_today }}</div>
                         </div>
+                        <div class="stat-card chat">
+                            <h3>Tổng Bản Ghi Chat</h3>
+                            <div class="value">{{ stats.total_chats }}</div>
+                        </div>
                         <div class="stat-card img">
-                            <h3>Ảnh Đã Tạo</h3>
+                            <h3>Tổng Ảnh Đã Tạo</h3>
                             <div class="value">{{ stats.total_images }}</div>
                         </div>
                     </div>
-                    <h3 style="margin-bottom: 15px; color:#fff;">Hoạt động gần đây</h3>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Tên đăng nhập</th>
-                                <th>Ngày tham gia</th>
-                                <th>Trạng thái</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for u in users[:5] %}
-                            <tr>
-                                <td>#{{ u['id'] }}</td>
-                                <td style="font-weight:bold; color:#fff;">{{ u['username'] }}</td>
-                                <td>{{ u['created_at'] }}</td>
-                                <td>
-                                    {% if u['is_pro'] %}<span class="badge badge-pro">PRO</span>
-                                    {% else %}<span class="badge badge-lite">LITE</span>{% endif %}
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
 
-                <!-- TAB USERS -->
-                <div id="tab-users" class="tab-pane">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Tên đăng nhập</th>
-                                <th>Trạng thái</th>
-                                <th>Thao tác</th>
-                                <th>Cấp quyền</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for u in users %}
-                            <tr>
-                                <td>#{{ u['id'] }}</td>
-                                <td style="font-weight:bold; color:#fff;">{{ u['username'] }}</td>
-                                <td>
-                                    {% if u['is_pro'] %}
-                                        <span class="badge badge-pro">PRO</span>
-                                        <div style="font-size:11px; color:#888; margin-top:4px;">
-                                            {% if u['pro_expire'] == 'forever' %}Vĩnh viễn{% else %}HS: {{ u['pro_expire'] }}{% endif %}
-                                        </div>
-                                    {% else %}
-                                        <span class="badge badge-lite">LITE</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <button class="btn btn-edit" onclick="changePw({{ u['id'] }})">Đổi MK</button>
-                                    <button class="btn btn-delete" onclick="deleteUser({{ u['id'] }})">Xóa</button>
-                                </td>
-                                <td>
-                                    {% if u['is_pro'] %}
-                                        <button class="btn btn-revoke" onclick="togglePro({{ u['id'] }}, 0)">Thu hồi</button>
-                                    {% else %}
-                                        <input type="number" id="duration_{{ u['id'] }}" value="30" min="1">
-                                        <button class="btn btn-pro" onclick="togglePro({{ u['id'] }}, 'custom')">Cấp</button>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- TAB IMAGES -->
-                <div id="tab-images" class="tab-pane">
-                    <h3 style="margin-bottom: 15px; color:#fff;">Lịch sử tạo ảnh (50 ảnh gần nhất)</h3>
-                    <div class="img-grid">
-                        {% for img in images %}
-                        <div class="img-card">
-                            <p>👤 {{ img['username'] }}</p>
-                            <p>✍️ {{ img['prompt'] }}</p>
-                            <p style="color:#1e88e5;">🕘 {{ img['created_at'] }}</p>
-                        </div>
-                        {% endfor %}
+                    <h3 style="margin-bottom: 12px; color:#fff;">Người dùng mới đăng ký gần đây</h3>
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Tên đăng nhập</th>
+                                    <th>Ngày tham gia</th>
+                                    <th>Tin hôm nay</th>
+                                    <th>Trạng thái</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for u in users[:8] %}
+                                <tr>
+                                    <td>#{{ u['id'] }}</td>
+                                    <td style="font-weight:bold; color:#fff;">{{ u['username'] }}</td>
+                                    <td>{{ u['created_at'] }}</td>
+                                    <td>{{ u['msg_count'] or 0 }}</td>
+                                    <td>
+                                        {% if u['is_pro'] %}<span class="badge badge-pro">PRO</span>
+                                        {% else %}<span class="badge badge-lite">LITE</span>{% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 
-                <!-- TAB CONFIG -->
+                <!-- TAB 2: QUẢN LÝ USER -->
+                <div id="tab-users" class="tab-pane">
+                    <!-- Thanh tạo user nhanh & tìm kiếm -->
+                    <div class="toolbar">
+                        <input type="text" id="userSearchInput" class="search-input" placeholder="🔍 Tìm kiếm theo tên đăng nhập..." oninput="filterUsers()">
+                        <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                            <input type="text" id="newUsername" class="search-input" style="min-width:140px;" placeholder="Tên user mới">
+                            <input type="password" id="newUserPw" class="search-input" style="min-width:140px;" placeholder="Mật khẩu">
+                            <label style="font-size:13px; display:flex; align-items:center; gap:4px; cursor:pointer;">
+                                <input type="checkbox" id="newUserPro"> Cấp PRO
+                            </label>
+                            <button class="btn btn-edit" onclick="createUserFromAdmin()">➕ Tạo User</button>
+                        </div>
+                    </div>
+
+                    <div class="table-wrap">
+                        <table id="usersTable">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Tên đăng nhập</th>
+                                    <th>Gói & Hạn dùng</th>
+                                    <th>Tin nhắn hôm nay</th>
+                                    <th>Thao tác tài khoản</th>
+                                    <th>Cấp / Thu hồi PRO</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for u in users %}
+                                <tr class="user-row" data-username="{{ u['username'] | lower }}">
+                                    <td>#{{ u['id'] }}</td>
+                                    <td style="font-weight:bold; color:#fff;">{{ u['username'] }}</td>
+                                    <td>
+                                        {% if u['is_pro'] %}
+                                            <span class="badge badge-pro">PRO</span>
+                                            <div style="font-size:11px; color:#888; margin-top:4px;">
+                                                {% if u['pro_expire'] == 'forever' or not u['pro_expire'] %}Vĩnh viễn{% else %}Hết hạn: {{ u['pro_expire'] }}{% endif %}
+                                            </div>
+                                        {% else %}
+                                            <span class="badge badge-lite">LITE</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <b>{{ u['msg_count'] or 0 }}</b> tin
+                                        <span style="font-size:11px; color:#888; display:block;">({{ u['last_msg_date'] or 'Chưa chat' }})</span>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-edit" onclick="changePw({{ u['id'] }})">Đổi MK</button>
+                                        <button class="btn btn-reset" onclick="resetQuota({{ u['id'] }})" title="Reset số tin nhắn hôm nay về 0">Reset Hạn Mức</button>
+                                        <button class="btn btn-delete" onclick="deleteUser({{ u['id'] }})">Xóa</button>
+                                    </td>
+                                    <td>
+                                        {% if u['is_pro'] %}
+                                            <button class="btn btn-revoke" onclick="togglePro({{ u['id'] }}, 0)">Thu hồi PRO</button>
+                                        {% else %}
+                                            <input type="number" id="duration_{{ u['id'] }}" value="30" min="0" title="Nhập 0 để cấp vĩnh viễn">
+                                            <button class="btn btn-pro" onclick="togglePro({{ u['id'] }}, 'custom')">Cấp PRO</button>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- TAB 3: ĐỌC LỊCH SỬ TRÒ CHUYỆN -->
+                <div id="tab-chats" class="tab-pane">
+                    <div class="toolbar">
+                        <input type="text" id="chatSearchInput" class="search-input" placeholder="🔍 Tìm nội dung tin nhắn, câu trả lời hoặc tên người dùng..." oninput="filterChatLogs()">
+                        <select id="chatUserFilter" class="select-filter" onchange="filterChatLogs()">
+                            <option value="">👤 Tất cả người dùng</option>
+                            {% for u in users %}
+                            <option value="{{ u['username'] | lower }}">{{ u['username'] }}</option>
+                            {% endfor %}
+                        </select>
+                        <button class="btn btn-delete" onclick="clearAllChatLogs()">🗑️ Xoá toàn bộ lịch sử</button>
+                    </div>
+
+                    <div class="chat-log-list" id="chatLogList">
+                        {% if chat_logs %}
+                            {% for log in chat_logs %}
+                            <div class="chat-log-card" data-user="{{ log['username'] | lower }}" data-content="{{ (log['user_msg'] ~ ' ' ~ log['bot_reply'] ~ ' ' ~ log['username']) | lower }}">
+                                <div class="chat-log-header">
+                                    <div>
+                                        <span class="chat-user-tag">👤 {{ log['username'] }}</span>
+                                        <span class="chat-model-tag">🤖 {{ log['model_name'] }}</span>
+                                    </div>
+                                    <div style="display:flex; align-items:center; gap:10px;">
+                                        <span style="color:#888; font-size:12px;">🕘 {{ log['created_at'] }}</span>
+                                        <button class="btn btn-delete" onclick="deleteSingleChatLog({{ log['id'] }})">Xoá</button>
+                                    </div>
+                                </div>
+                                <div class="chat-msg-block chat-msg-user"><b>Hỏi:</b> {{ log['user_msg'] }}</div>
+                                <div class="chat-msg-block chat-msg-bot"><b>Lumina AI:</b> {{ log['bot_reply'] }}</div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="info-box"><p>Chưa có bản ghi trò chuyện nào được lưu.</p></div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- TAB 4: XEM TẤT CẢ ẢNH AI ĐÃ TẠO -->
+                <div id="tab-images" class="tab-pane">
+                    <div class="toolbar">
+                        <input type="text" id="imgSearchInput" class="search-input" placeholder="🔍 Tìm kiếm ảnh theo mô tả (prompt) hoặc tên người tạo..." oninput="filterImages()">
+                        <button class="btn btn-delete" onclick="clearAllImages()">🗑️ Xoá tất cả ảnh</button>
+                    </div>
+
+                    <div class="img-grid" id="imgGrid">
+                        {% if images %}
+                            {% for img in images %}
+                            <div class="img-card" data-search="{{ (img['username'] ~ ' ' ~ img['prompt']) | lower }}">
+                                {% if img['image_data'] %}
+                                    <img src="{{ img['image_data'] }}" class="img-preview" alt="{{ img['prompt'] }}" onclick="openLightbox(this.src, {{ img['prompt'] | tojson }})">
+                                {% else %}
+                                    <div class="img-no-preview">Ảnh cũ (trước bản cập nhật lưu dữ liệu hình ảnh)</div>
+                                {% endif %}
+                                <p>👤 <b style="color:#fff;">{{ img['username'] }}</b></p>
+                                <p>✍️ {{ img['prompt'] }}</p>
+                                <p style="color:#1e88e5; font-size:11.5px;">🕘 {{ img['created_at'] }}</p>
+                                <div style="display:flex; gap:6px; margin-top:auto;">
+                                    {% if img['image_data'] %}
+                                    <a href="{{ img['image_data'] }}" download="lumina_img_{{ img['id'] }}.png" class="btn btn-edit" style="text-decoration:none; text-align:center; flex:1;">⬇ Tải ảnh</a>
+                                    {% endif %}
+                                    <button class="btn btn-delete" style="flex:1;" onclick="deleteSingleImage({{ img['id'] }})">🗑️ Xoá</button>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="info-box"><p>Chưa có bức ảnh AI nào được tạo.</p></div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- TAB 5: CẤU HÌNH HỆ THỐNG ĐỒNG BỘ TỪ .ENV -->
                 <div id="tab-config" class="tab-pane">
                     <div class="info-box">
-                        <h3>🧠 Mô hình AI đang hoạt động</h3>
-                        <p>Gói Lite: <span>Groq GPT-OSS 20B, Liquid LFM 2.5</span></p>
-                        <p>Gói Pro: <span>Inkling Small, Groq GPT-OSS 120B, Qwen 3.8, Nemotron 3 Ultra</span></p>
+                        <h3>🧠 Mô hình AI đang hoạt động (Tự động đọc từ .env)</h3>
+                        <p>Gói Lite ({{ config_info.lite_models | length }} model): <span>{{ config_info.lite_models | join(' | ') }}</span></p>
+                        <p>Gói Pro ({{ config_info.pro_models | length }} model): <span>{{ config_info.pro_models | join(' | ') }}</span></p>
                     </div>
                     <div class="info-box">
-                        <h3>🎨 Mô hình tạo ảnh</h3>
-                        <p>API: <span>Hugging Face Inference API</span></p>
-                        <p>Model: <span>FLUX.1-schnell</span></p>
+                        <h3>🎨 Mô hình tạo ảnh AI</h3>
+                        <p>Nhà cung cấp: <span>Pollinations AI (gen.pollinations.ai)</span></p>
+                        <p>Model ID: <span>{{ config_info.image_model }}</span></p>
                     </div>
                     <div class="info-box">
-                        <h3>📊 Giới hạn tin nhắn</h3>
-                        <p>Tài khoản Lite: <span>50 tin nhắn / ngày</span></p>
-                        <p>Tài khoản Pro: <span>120 tin nhắn / ngày</span></p>
+                        <h3>🗄️ Cơ sở dữ liệu & Phiên đăng nhập</h3>
+                        <p>Hệ quản trị CSDL đang kết nối: <span>{{ config_info.db_type }}</span></p>
+                        <p>Thời hạn giữ đăng nhập tự động (Persistent Cookie): <span>30 ngày</span></p>
+                        <p>Giới hạn tin nhắn: <span>Lite (50 tin/ngày) - Pro (120 tin/ngày)</span></p>
                     </div>
                 </div>
 
@@ -254,6 +392,11 @@
         </div>
 
         <script>
+            function toggleDevSidebar() {
+                document.getElementById('devSidebar').classList.toggle('active');
+                document.getElementById('devSidebarOverlay').classList.toggle('active');
+            }
+
             function switchTab(tabId, el) {
                 document.querySelectorAll('.tab-pane').forEach(t => t.classList.remove('active'));
                 document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
@@ -261,22 +404,84 @@
                 document.getElementById('tab-' + tabId).classList.add('active');
                 el.classList.add('active');
                 
-                const titles = { 'dashboard': 'Tổng quan hệ thống', 'users': 'Quản lý Người dùng', 'images': 'Kho ảnh AI', 'config': 'Cấu hình Hệ thống' };
+                const titles = { 
+                    'dashboard': 'Tổng quan hệ thống', 
+                    'users': 'Quản lý Người dùng', 
+                    'chats': 'Lịch sử Trò chuyện Toàn Hệ Thống',
+                    'images': 'Kho ảnh AI đã tạo', 
+                    'config': 'Cấu hình Hệ thống' 
+                };
                 document.getElementById('pageTitle').innerText = titles[tabId];
+                if (window.innerWidth <= 768) toggleDevSidebar();
+            }
+
+            function openLightbox(src, caption) {
+                document.getElementById('lightboxImg').src = src;
+                document.getElementById('lightboxCaption').innerText = caption;
+                document.getElementById('imgLightbox').classList.add('active');
+            }
+
+            function closeLightbox() {
+                document.getElementById('imgLightbox').classList.remove('active');
+            }
+
+            function filterUsers() {
+                const q = document.getElementById('userSearchInput').value.toLowerCase();
+                document.querySelectorAll('.user-row').forEach(row => {
+                    row.style.display = row.dataset.username.includes(q) ? '' : 'none';
+                });
+            }
+
+            function filterChatLogs() {
+                const q = document.getElementById('chatSearchInput').value.toLowerCase();
+                const u = document.getElementById('chatUserFilter').value.toLowerCase();
+                document.querySelectorAll('.chat-log-card').forEach(card => {
+                    const matchText = card.dataset.content.includes(q);
+                    const matchUser = !u || card.dataset.user === u;
+                    card.style.display = (matchText && matchUser) ? '' : 'none';
+                });
+            }
+
+            function filterImages() {
+                const q = document.getElementById('imgSearchInput').value.toLowerCase();
+                document.querySelectorAll('#imgGrid .img-card').forEach(card => {
+                    card.style.display = card.dataset.search.includes(q) ? '' : 'none';
+                });
+            }
+
+            async function createUserFromAdmin() {
+                const username = document.getElementById('newUsername').value.trim();
+                const password = document.getElementById('newUserPw').value.trim();
+                const is_pro = document.getElementById('newUserPro').checked;
+                if (!username || !password) return alert("Vui lòng nhập tên tài khoản và mật khẩu!");
+
+                const res = await fetch('/api/admin/create_user', {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ username, password, is_pro })
+                });
+                const data = await res.json();
+                if (data.success) location.reload();
+                else alert(data.message);
             }
 
             async function togglePro(id, mode) {
                 let duration = 0;
                 if(mode === 'custom') {
                     duration = parseFloat(document.getElementById('duration_' + id).value);
-                    if(isNaN(duration) || duration <= 0) return alert("Nhập số ngày hợp lệ!");
+                    if(isNaN(duration) || duration < 0) return alert("Nhập số ngày hợp lệ (nhập 0 để cấp vĩnh viễn)!");
                 }
-                if(!confirm(mode === 'custom' ? `Cấp quyền Pro trong ${duration} ngày?` : `Thu hồi quyền Pro?`)) return;
+                const msg = mode === 'custom' ? (duration === 0 ? "Cấp quyền PRO Vĩnh viễn?" : `Cấp quyền PRO trong ${duration} ngày?`) : "Thu hồi quyền PRO?";
+                if(!confirm(msg)) return;
                 
                 const res = await fetch('/api/admin/toggle_pro/' + id, { 
                     method: 'POST', headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ duration: duration })
                 });
+                if(res.ok) location.reload(); else alert("Lỗi!");
+            }
+
+            async function resetQuota(id) {
+                const res = await fetch('/api/admin/reset_quota/' + id, { method: 'POST' });
                 if(res.ok) location.reload(); else alert("Lỗi!");
             }
 
@@ -298,6 +503,29 @@
                 const data = await res.json();
                 if(data.success) alert("Đổi mật khẩu thành công!");
                 else alert(data.message);
+            }
+
+            async function deleteSingleImage(id) {
+                if(!confirm("Xoá bức ảnh này khỏi hệ thống?")) return;
+                const res = await fetch('/api/admin/delete_image/' + id, { method: 'POST' });
+                if(res.ok) location.reload();
+            }
+
+            async function clearAllImages() {
+                if(!confirm("CẢNH BÁO: Xoá toàn bộ kho ảnh AI đã tạo?")) return;
+                const res = await fetch('/api/admin/clear_all_images', { method: 'POST' });
+                if(res.ok) location.reload();
+            }
+
+            async function deleteSingleChatLog(id) {
+                const res = await fetch('/api/admin/delete_chat/' + id, { method: 'POST' });
+                if(res.ok) location.reload();
+            }
+
+            async function clearAllChatLogs() {
+                if(!confirm("CẢNH BÁO: Xoá toàn bộ lịch sử trò chuyện của tất cả người dùng trên Server?")) return;
+                const res = await fetch('/api/admin/clear_all_chats', { method: 'POST' });
+                if(res.ok) location.reload();
             }
         </script>
     {% endif %}

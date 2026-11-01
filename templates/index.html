@@ -2,245 +2,585 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Lumina AI</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%231e88e5'/%3E%3Cpath d='M55 15 L30 55 L48 55 L42 85 L72 42 L52 42 Z' fill='white'/%3E%3C/svg%3E" />
     
     <style>
-        :root { --bg-body: #f5f7fb; --bg-sidebar: #ffffff; --bg-chat: #f5f7fb; --bg-msg-bot: #ffffff; --bg-model-bar: #ffffff; --bg-input: #ffffff; --bg-recent-item: #f9f9f9; --bg-recent-hover: #e3f2fd; --text-main: #333333; --text-muted: #666666; --border-color: #e0e6f0; --primary: #1e88e5; --primary-dark: #1565c0; --msg-user-bg: #1e88e5; --msg-user-text: #ffffff; --code-bg: #f0f0f0; --pre-bg: #282c34; --pre-text: #abb2bf; --modal-bg: rgba(0,0,0,0.5); }
-        body.dark-mode { --bg-body: #121212; --bg-sidebar: #1e1e1e; --bg-chat: #121212; --bg-msg-bot: #1e1e1e; --bg-model-bar: #1e1e1e; --bg-input: #1e1e1e; --bg-recent-item: #2a2a2a; --bg-recent-hover: #333333; --text-main: #e0e0e0; --text-muted: #aaaaaa; --border-color: #333333; --primary: #2196f3; --primary-dark: #1976d2; --msg-user-bg: #1976d2; --code-bg: #2a2a2a; }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; transition: background-color 0.3s, color 0.3s; }
-        body { display: flex; height: 100vh; background: var(--bg-body); color: var(--text-main); overflow: hidden; }
+        :root { 
+            --bg-body: #f5f7fb; --bg-sidebar: #ffffff; --bg-chat: #f5f7fb; --bg-msg-bot: #ffffff; 
+            --bg-model-bar: #ffffff; --bg-input: #ffffff; --bg-recent-item: #f9f9f9; --bg-recent-hover: #e3f2fd; 
+            --text-main: #333; --text-muted: #666; --border-color: #e0e6f0; --primary: #1e88e5; 
+            --primary-dark: #1565c0; --msg-user-bg: #1e88e5; --msg-user-text: #fff; --code-bg: #f0f0f0; 
+            --pre-bg: #282c34; --pre-text: #abb2bf; --modal-bg: rgba(0,0,0,0.5); 
+            --chat-font-size: 15px;
+        }
+        body.dark-mode { 
+            --bg-body: #121212; --bg-sidebar: #1e1e1e; --bg-chat: #121212; --bg-msg-bot: #1e1e1e; 
+            --bg-model-bar: #1e1e1e; --bg-input: #1e1e1e; --bg-recent-item: #2a2a2a; --bg-recent-hover: #333; 
+            --text-main: #e0e0e0; --text-muted: #aaa; --border-color: #333; --primary: #2196f3; 
+            --primary-dark: #1976d2; --msg-user-bg: #1976d2; --code-bg: #2a2a2a; 
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; transition: background-color 0.25s, color 0.25s; -webkit-tap-highlight-color: transparent; }
+        html, body { width: 100%; height: 100%; height: 100dvh; overflow: hidden; position: fixed; inset: 0; background: var(--bg-body); color: var(--text-main); }
+        body { display: flex; }
         
-        .sidebar { width: 280px; background: var(--bg-sidebar); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; }
-        .sidebar-header { padding: 20px; background: var(--primary); color: white; font-weight: bold; font-size: 18px; display: flex; justify-content: space-between; align-items: center; }
+        /* --- SIDEBAR --- */
+        .sidebar { width: 280px; height: 100%; background: var(--bg-sidebar); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; transition: transform 0.3s ease; z-index: 1000; flex-shrink: 0; }
+        .sidebar-header { padding: 18px 20px; background: var(--primary); color: white; font-weight: bold; font-size: 18px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
         .user-badge { font-size: 12px; background: {{ 'gold' if is_pro else '#fff' }}; color: {{ '#333' if is_pro else '#1e88e5' }}; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
-        .new-chat-btn { margin: 15px; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; }
+        .new-chat-btn { margin: 15px; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 15px; flex-shrink: 0; }
         .new-chat-btn:hover { background: var(--primary-dark); }
-        .recent-tab { flex: 1; overflow-y: auto; padding: 0 15px 15px 15px; }
-        .recent-title { font-size: 12px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 10px; font-weight: bold; margin-left: 5px; }
-        .recent-item { padding: 10px; background: var(--bg-recent-item); border-radius: 8px; margin-bottom: 10px; cursor: pointer; border: 1px solid transparent; transition: 0.2s; }
-        .recent-item:hover { border-color: var(--primary); background: var(--bg-recent-hover); }
-        .recent-q { font-weight: bold; font-size: 14px; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-main); }
-        .recent-a { font-size: 12px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .sidebar-footer { padding: 15px; border-top: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 10px; }
-        .btn-sidebar { padding: 10px; text-align: center; background: var(--bg-recent-item); border-radius: 8px; text-decoration: none; color: var(--text-main); font-size: 14px; border: 1px solid transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .btn-sidebar:hover { border-color: var(--primary); }
+        
+        .recent-tab { flex: 1; min-height: 0; overflow-y: auto; padding: 0 15px 15px 15px; }
+        .recent-title { font-size: 12px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 10px; font-weight: bold; }
+        .recent-item { padding: 10px 12px; background: var(--bg-recent-item); border-radius: 8px; margin-bottom: 8px; cursor: pointer; border: 1px solid transparent; display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 14px; }
+        .recent-item:hover { border-color: var(--primary); }
+        .recent-item-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; }
+        .recent-del-btn { background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 14px; padding: 2px 5px; border-radius: 4px; opacity: 0.6; flex-shrink: 0; }
+        .recent-del-btn:hover { opacity: 1; color: #e53935; background: rgba(229,57,53,0.1); }
+        
+        .sidebar-footer { padding: 15px; border-top: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 10px; flex-shrink: 0; padding-bottom: max(15px, env(safe-area-inset-bottom)); }
+        .btn-sidebar { padding: 10px; text-align: center; background: var(--bg-recent-item); border-radius: 8px; text-decoration: none; color: var(--text-main); font-size: 14px; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; border: none; width: 100%; }
+        .btn-sidebar:hover { background: var(--bg-recent-hover); }
         .btn-sidebar.logout { color: #c62828; }
-        body.dark-mode .btn-sidebar.logout { color: #ef5350; background: #331111; }
         
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--modal-bg); display: none; justify-content: center; align-items: center; z-index: 1000; backdrop-filter: blur(2px); }
-        .modal-overlay.active { display: flex; }
-        .modal-content { background: var(--bg-sidebar); padding: 25px; border-radius: 12px; width: 320px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); border: 1px solid var(--border-color); }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; font-weight: bold; font-size: 18px; }
-        .close-btn { cursor: pointer; font-size: 20px; color: var(--text-muted); }
-        .close-btn:hover { color: red; }
-        .setting-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border-color); }
-        .switch { position: relative; display: inline-block; width: 34px; height: 20px; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
-        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
-        input:checked + .slider { background-color: var(--primary); }
-        input:checked + .slider:before { transform: translateX(14px); }
-        .btn-upgrade-modal { display: block; text-align: center; background: linear-gradient(45deg, #ff8f00, #ffb300); color: white; font-weight: bold; padding: 10px; border-radius: 8px; text-decoration: none; margin-top: 15px; }
+        /* --- MAIN CHAT --- */
+        .main-chat { flex: 1; min-width: 0; height: 100%; display: flex; flex-direction: column; background: var(--bg-chat); position: relative; overflow: hidden; }
+        .mobile-header { display: none; padding: 10px 15px; background: var(--primary); color: white; align-items: center; justify-content: space-between; gap: 10px; flex-shrink: 0; padding-top: max(10px, env(safe-area-inset-top)); }
+        .menu-toggle { background: transparent; border: none; color: white; font-size: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; flex-shrink: 0; }
         
-        .main-chat { flex: 1; display: flex; flex-direction: column; background: var(--bg-chat); }
-        .model-bar { padding: 10px 20px; background: var(--bg-model-bar); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; }
-        .model-select-wrap { display: flex; align-items: center; gap: 10px; }
-        .model-bar select { padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color); font-size: 14px; outline: none; cursor: pointer; width: 300px; background: var(--bg-body); color: var(--text-main); }
-        .quota-info { font-size: 12px; color: var(--text-muted); background: var(--bg-recent-item); padding: 4px 10px; border-radius: 20px; }
-        .chat-box { flex: 1; padding: 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; }
-        .msg { max-width: 80%; padding: 14px 18px; border-radius: 16px; line-height: 1.6; font-size: 15px; }
+        .model-bar { padding: 10px 20px; background: var(--bg-model-bar); border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-shrink: 0; }
+        .model-select { padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-body); color: var(--text-main); outline: none; max-width: 65%; font-size: 14px; text-overflow: ellipsis; }
+        .quota-info { font-size: 13px; color: var(--text-muted); white-space: nowrap; }
+        
+        .chat-box { flex: 1; min-height: 0; padding: 20px; overflow-y: auto; overflow-x: hidden; display: flex; flex-direction: column; gap: 16px; scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
+        .msg { max-width: 82%; padding: 14px 18px; border-radius: 16px; line-height: 1.6; font-size: var(--chat-font-size); word-wrap: break-word; overflow-wrap: break-word; }
         .msg.user { align-self: flex-end; background: var(--msg-user-bg); color: var(--msg-user-text); border-bottom-right-radius: 4px; }
-        .msg.bot { align-self: flex-start; background: var(--bg-msg-bot); color: var(--text-main); border: 1px solid var(--border-color); border-bottom-left-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .msg.bot { align-self: flex-start; background: var(--bg-msg-bot); color: var(--text-main); border: 1px solid var(--border-color); border-bottom-left-radius: 4px; max-width: 85%; }
+        .msg.bot img { max-width: 100%; height: auto; border-radius: 8px; margin-top: 8px; display: block; }
         
-        .msg.bot p { margin-bottom: 8px; }
-        .msg.bot pre { background: var(--pre-bg); color: var(--pre-text); padding: 10px; border-radius: 8px; overflow-x: auto; margin: 10px 0; }
-        .msg.bot code { font-family: monospace; background: var(--code-bg); padding: 2px 4px; border-radius: 4px; color: var(--text-main); }
+        /* Markdown Styles */
+        .msg.bot table { width: 100%; border-collapse: collapse; margin: 10px 0; display: block; overflow-x: auto; }
+        .msg.bot th, .msg.bot td { border: 1px solid var(--border-color); padding: 8px; text-align: left; }
+        .msg.bot pre { background: var(--pre-bg); color: var(--pre-text); padding: 12px; border-radius: 8px; overflow-x: auto; margin: 10px 0; font-size: 13.5px; max-width: 100%; }
+        .msg.bot code { font-family: Consolas, monospace; background: var(--code-bg); padding: 2px 6px; border-radius: 4px; color: var(--text-main); word-break: break-word; }
         .msg.bot pre code { background: transparent; padding: 0; color: inherit; }
+        .msg.bot p { margin-bottom: 10px; } .msg.bot p:last-child { margin-bottom: 0; }
         
-        .input-bar { padding: 20px; background: var(--bg-input); border-top: 1px solid var(--border-color); display: flex; gap: 10px; }
-        .input-bar input { flex: 1; padding: 15px; border: 1px solid var(--border-color); border-radius: 25px; outline: none; font-size: 15px; background: var(--bg-body); color: var(--text-main); }
-        .input-bar button { width: 50px; height: 50px; border-radius: 50%; border: none; background: var(--primary); color: white; font-size: 20px; cursor: pointer; display: flex; justify-content: center; align-items: center; }
-        .input-bar button:disabled { background: #888; cursor: not-allowed; }
-        .btn-image { background: #ff9800 !important; margin-right: 5px; }
-        .btn-image:hover { background: #f57c00 !important; }
+        /* Input Bar */
+        .input-bar { padding: 12px 20px; background: var(--bg-input); border-top: 1px solid var(--border-color); display: flex; gap: 10px; align-items: center; flex-shrink: 0; padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+        .input-bar input { flex: 1; padding: 12px 18px; border: 1px solid var(--border-color); border-radius: 25px; outline: none; font-size: 16px; background: var(--bg-body); color: var(--text-main); min-width: 0; }
+        .input-bar input:focus { border-color: var(--primary); }
+        .input-bar button { width: 46px; height: 46px; border-radius: 50%; border: none; color: white; font-size: 18px; cursor: pointer; display: flex; justify-content: center; align-items: center; flex-shrink: 0; transition: transform 0.1s; }
+        .input-bar button:active { transform: scale(0.92); }
+        .btn-img { background: #ff9800; }
+        .btn-send { background: var(--primary); }
+        .btn-send:disabled, .btn-img:disabled { background: #9e9e9e; cursor: not-allowed; }
+
+        /* Loading Animation */
+        .typing-indicator { display: flex; gap: 4px; padding: 8px 12px; align-items: center; height: 24px; }
+        .typing-indicator span { width: 6px; height: 6px; background-color: var(--text-muted); border-radius: 50%; animation: typing 1.4s infinite ease-in-out both; }
+        .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+        .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes typing { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+
+        /* Modal Settings */
+        .modal-overlay { position: fixed; inset: 0; background: var(--modal-bg); display: none; justify-content: center; align-items: center; z-index: 2000; backdrop-filter: blur(3px); padding: 15px; }
+        .modal-overlay.active { display: flex; }
+        .modal-content { background: var(--bg-sidebar); padding: 22px; border-radius: 14px; width: 100%; max-width: 420px; max-height: 90dvh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.25); border: 1px solid var(--border-color); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; font-weight: bold; font-size: 18px; padding-bottom: 10px; border-bottom: 1px solid var(--border-color); }
+        .setting-section-title { font-size: 12px; font-weight: bold; text-transform: uppercase; color: var(--primary); margin: 15px 0 8px 0; }
+        .setting-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border-color); font-size: 14px; gap: 10px; }
+        .setting-select { padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-body); color: var(--text-main); outline: none; }
+        .setting-input { width: 100%; padding: 10px 12px; margin-top: 8px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-body); color: var(--text-main); font-size: 14px; outline: none; }
+        .btn-setting-action { width: 100%; padding: 10px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; margin-top: 8px; font-size: 14px; transition: 0.2s; }
+        .btn-primary-action { background: var(--primary); color: white; }
+        .btn-primary-action:hover { background: var(--primary-dark); }
+        .btn-danger-action { background: rgba(229, 57, 53, 0.12); color: #e53935; border: 1px solid #e53935; }
+        .btn-danger-action:hover { background: #e53935; color: white; }
+        .btn-secondary-action { background: var(--bg-recent-item); color: var(--text-main); border: 1px solid var(--border-color); }
+        .btn-secondary-action:hover { background: var(--bg-recent-hover); }
+        
+        .switch { position: relative; display: inline-block; width: 42px; height: 24px; flex-shrink: 0; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; inset: 0; background-color: #ccc; transition: .3s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--primary); }
+        input:checked + .slider:before { transform: translateX(18px); }
+        .btn-upgrade { display: block; text-align: center; background: linear-gradient(45deg, #ff8f00, #ffb300); color: white; font-weight: bold; padding: 12px; border-radius: 8px; text-decoration: none; margin-top: 16px; }
+
+        /* Overlay for Mobile Sidebar */
+        .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 999; opacity: 0; transition: opacity 0.3s; }
+        .sidebar-overlay.active { display: block; opacity: 1; }
+
+        /* Responsive Breakpoints */
+        @media (max-width: 1024px) {
+            .sidebar { width: 250px; }
+            .msg, .msg.bot { max-width: 88%; }
+        }
+        @media (max-width: 768px) {
+            .sidebar { position: fixed; width: 275px; max-width: 82vw; height: 100%; height: 100dvh; transform: translateX(-100%); top: 0; left: 0; }
+            .sidebar.active { transform: translateX(0); }
+            .mobile-header { display: flex; }
+            .model-bar { display: none; } 
+            .msg, .msg.bot { max-width: 92%; padding: 12px 15px; }
+            .chat-box { padding: 14px; gap: 12px; }
+            .input-bar { padding: 10px 12px; gap: 8px; padding-bottom: max(10px, env(safe-area-inset-bottom)); }
+            .input-bar input { font-size: 16px; padding: 10px 15px; }
+            .input-bar button { width: 42px; height: 42px; font-size: 16px; }
+        }
+        @media (max-width: 380px) {
+            .mobile-header span { font-size: 14px; }
+            #mobileModelSelect { max-width: 115px !important; }
+        }
     </style>
 </head>
 <body>
-    <div class="sidebar">
-        <div class="sidebar-header"><span>⚡ Lumina</span><span class="user-badge">{{ 'PRO' if is_pro else 'LITE' }}</span></div>
-        <button class="new-chat-btn" onclick="createNewChat()">➕ Cuộc trò chuyện mới</button>
+    <!-- Mobile Sidebar Overlay -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+    
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <span>⚡ Lumina</span>
+            <span class="user-badge">{{ 'PRO' if is_pro else 'LITE' }}</span>
+        </div>
+        <button class="new-chat-btn" onclick="createNewChat(); closeSidebarOnMobile();">➕ Chat mới</button>
         <div class="recent-tab" id="recentList"><div class="recent-title">Gần đây</div></div>
         <div class="sidebar-footer">
-            <div style="text-align: center; font-size: 13px; color: var(--text-muted); margin-bottom: 5px;">👤 {{ username }}</div>
-            <div class="btn-sidebar" onclick="toggleSettings()">⚙️ Cài đặt</div>
+            <button class="btn-sidebar" onclick="toggleSettings()">⚙️ Cài đặt & Tài khoản</button>
             <a href="/logout" class="btn-sidebar logout">Đăng xuất</a>
         </div>
     </div>
-    <div class="modal-overlay" id="settingsModal">
+
+    <!-- Settings Modal (Mở rộng nhiều chức năng) -->
+    <div class="modal-overlay" id="settingsModal" onclick="if(event.target===this) toggleSettings()">
         <div class="modal-content">
-            <div class="modal-header"><span>⚙️ Cài đặt</span><span class="close-btn" onclick="toggleSettings()">✖</span></div>
-            <div class="setting-item"><span>🌙 Giao diện tối</span><label class="switch"><input type="checkbox" id="darkModeToggle"><span class="slider"></span></label></div>
-            {% if not is_pro %}<a href="/upgrade" class="btn-upgrade-modal">🚀 Nâng cấp Lumina Pro</a>{% else %}<div style="text-align: center; font-size: 13px; color: gold; margin-top: 15px;">⭐ Bạn đang dùng bản Pro</div>{% endif %}
-        </div>
-    </div>
-    <div class="main-chat">
-        <div class="model-bar">
-            <div class="model-select-wrap">
-                <label for="modelSelect" style="font-weight: bold; color: var(--text-muted);">🧠 Model:</label>
-                <select id="modelSelect">
-                    {% for m in models %}<option value="{{ m.id }}" {% if m.is_pro and not is_pro %}disabled>🔒 {{ m.name }} (Cần Pro){% else %}>{{ m.name }}{% endif %}</option>{% endfor %}
+            <div class="modal-header">
+                <span>⚙️ Cài đặt hệ thống</span>
+                <span style="cursor:pointer; padding: 4px 8px;" onclick="toggleSettings()">✖</span>
+            </div>
+
+            <!-- Thông tin tài khoản -->
+            <div class="setting-section-title">👤 Thông tin tài khoản</div>
+            <div class="setting-item">
+                <span>Tài khoản</span>
+                <b>{{ username }} ({{ 'Gói PRO' if is_pro else 'Gói LITE' }})</b>
+            </div>
+            <div class="setting-item">
+                <span>Hạn mức hôm nay</span>
+                <b id="settingQuotaText">{{ used_msgs }} / {{ '120' if is_pro else '50' }} tin nhắn</b>
+            </div>
+            {% if is_pro %}
+            <div class="setting-item">
+                <span>Thời hạn Pro</span>
+                <b>{{ 'Vĩnh viễn' if not pro_expire or pro_expire == 'forever' else pro_expire }}</b>
+            </div>
+            {% endif %}
+
+            <!-- Giao diện -->
+            <div class="setting-section-title">🎨 Giao diện hiển thị</div>
+            <div class="setting-item">
+                <span>🌙 Chế độ tối (Dark Mode)</span>
+                <label class="switch"><input type="checkbox" id="darkModeToggle"><span class="slider"></span></label>
+            </div>
+            <div class="setting-item">
+                <span>🔤 Cỡ chữ khung chat</span>
+                <select class="setting-select" id="fontSizeSelect">
+                    <option value="14px">Nhỏ (14px)</option>
+                    <option value="15px" selected>Vừa (15px)</option>
+                    <option value="17px">Lớn (17px)</option>
                 </select>
             </div>
-            <div class="quota-info">Giới hạn: <b>{{ '120' if is_pro else '50' }}</b> tin/ngày</div>
+
+            <!-- Quản lý dữ liệu trò chuyện -->
+            <div class="setting-section-title">💬 Quản lý dữ liệu trò chuyện</div>
+            <button class="btn-setting-action btn-secondary-action" onclick="exportChatHistory()">📥 Xuất lịch sử trò chuyện (.json)</button>
+            <button class="btn-setting-action btn-danger-action" onclick="clearAllChats()">🗑️ Xoá tất cả cuộc trò chuyện</button>
+
+            <!-- Đổi mật khẩu tài khoản -->
+            <div class="setting-section-title">🔒 Đổi mật khẩu tài khoản</div>
+            <input type="password" id="oldPwInput" class="setting-input" placeholder="Nhập mật khẩu hiện tại">
+            <input type="password" id="newPwInput" class="setting-input" placeholder="Nhập mật khẩu mới (tối thiểu 3 ký tự)">
+            <input type="password" id="confirmPwInput" class="setting-input" placeholder="Nhập lại mật khẩu mới">
+            <button class="btn-setting-action btn-primary-action" onclick="changeUserPassword()">Cập nhật mật khẩu</button>
+
+            {% if not is_pro %}
+            <a href="/upgrade" class="btn-upgrade">🚀 Nâng cấp Lumina Pro</a>
+            {% endif %}
         </div>
+    </div>
+
+    <!-- Main Chat Area -->
+    <div class="main-chat">
+        <!-- Header Mobile -->
+        <div class="mobile-header">
+            <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+            <span style="font-weight: bold; flex: 1; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">⚡ Lumina AI</span>
+            <select class="model-select" id="mobileModelSelect" style="max-width: 135px; font-size: 12px; padding: 5px 8px;">
+                {% for m in models %}<option value="{{ m.id }}" {% if m.is_pro and not is_pro %}disabled>🔒 {{ m.name.split('(')[0] }}{% else %}>{{ m.name }}{% endif %}</option>{% endfor %}
+            </select>
+        </div>
+
+        <!-- Desktop Model Bar -->
+        <div class="model-bar">
+            <select class="model-select" id="modelSelect">
+                {% for m in models %}<option value="{{ m.id }}" {% if m.is_pro and not is_pro %}disabled>🔒 {{ m.name }} (Pro){% else %}>{{ m.name }}{% endif %}</option>{% endfor %}
+            </select>
+            <div class="quota-info">Hôm nay: <b id="topQuotaCount">{{ used_msgs }}</b> / <b>{{ '120' if is_pro else '50' }}</b> tin</div>
+        </div>
+
         <div class="chat-box" id="chatBox"></div>
+        
         <form class="input-bar" id="chatForm">
-            <input type="text" id="msgInput" placeholder="Nhập tin nhắn hoặc mô tả ảnh..." autocomplete="off">
-            <button type="button" class="btn-image" id="imgBtn" title="Tạo ảnh từ mô tả">🎨</button>
-            <button type="submit" id="sendBtn">➤</button>
+            <input type="text" id="msgInput" placeholder="Nhập tin nhắn hoặc mô tả ảnh..." autocomplete="off" required>
+            <button type="button" class="btn-img" id="imgBtn" title="Tạo ảnh từ mô tả">🎨</button>
+            <button type="submit" class="btn-send" id="sendBtn" title="Gửi tin nhắn">➤</button>
         </form>
     </div>
+
     <script>
+        const CURRENT_USER = {{ username | tojson }};
+        const STORAGE_KEY = 'lumina_chats_' + CURRENT_USER;
+
         const chatBox = document.getElementById('chatBox');
         const form = document.getElementById('chatForm');
         const input = document.getElementById('msgInput');
         const sendBtn = document.getElementById('sendBtn');
+        const imgBtn = document.getElementById('imgBtn');
         const recentList = document.getElementById('recentList');
-        const modelSelect = document.getElementById('modelSelect');
-        const darkModeToggle = document.getElementById('darkModeToggle');
-        const settingsModal = document.getElementById('settingsModal');
-        const username = "{{ username }}";
         
-        let chatSessions = []; let currentSessionId = null; 
+        const modelSelect = document.getElementById('modelSelect');
+        const mobileModelSelect = document.getElementById('mobileModelSelect');
+        
+        const sidebar = document.getElementById('sidebar');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        const darkModeToggle = document.getElementById('darkModeToggle');
+        const fontSizeSelect = document.getElementById('fontSizeSelect');
+        
+        // Tải lịch sử theo từng user (hỗ trợ migrate từ key cũ nếu có)
+        let chatSessions = JSON.parse(localStorage.getItem(STORAGE_KEY)) || JSON.parse(localStorage.getItem('lumina_chats')) || [];
+        let currentSessionId = null; 
 
-        function createNewChat() {
-            const newSession = { id: Date.now().toString(), title: "Đoạn chat mới", messages: [] };
-            chatSessions.unshift(newSession); currentSessionId = newSession.id;
-            renderRecentList(); renderChatBox(); input.focus();
+        function init() {
+            if (localStorage.getItem('lumina_theme') === 'dark') {
+                document.body.classList.add('dark-mode');
+                darkModeToggle.checked = true;
+            }
+            
+            const savedFontSize = localStorage.getItem('lumina_font_size') || '15px';
+            document.documentElement.style.setProperty('--chat-font-size', savedFontSize);
+            fontSizeSelect.value = savedFontSize;
+
+            modelSelect.addEventListener('change', (e) => mobileModelSelect.value = e.target.value);
+            mobileModelSelect.addEventListener('change', (e) => modelSelect.value = e.target.value);
+
+            renderRecentList();
+            if (chatSessions.length > 0) {
+                loadSession(chatSessions[0].id);
+            } else {
+                createNewChat();
+            }
         }
 
-        function loadChatSession(id) { currentSessionId = id; renderChatBox(); renderRecentList(); }
+        function toggleSidebar() {
+            sidebar.classList.toggle('active');
+            sidebarOverlay.classList.toggle('active');
+        }
+
+        function closeSidebarOnMobile() {
+            if (window.innerWidth <= 768) {
+                sidebar.classList.remove('active');
+                sidebarOverlay.classList.remove('active');
+            }
+        }
+
+        function toggleSettings() {
+            document.getElementById('settingsModal').classList.toggle('active');
+        }
+
+        darkModeToggle.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                document.body.classList.add('dark-mode');
+                localStorage.setItem('lumina_theme', 'dark');
+            } else {
+                document.body.classList.remove('dark-mode');
+                localStorage.setItem('lumina_theme', 'light');
+            }
+        });
+
+        fontSizeSelect.addEventListener('change', (e) => {
+            const size = e.target.value;
+            document.documentElement.style.setProperty('--chat-font-size', size);
+            localStorage.setItem('lumina_font_size', size);
+        });
+
+        function createNewChat() {
+            const newSession = { id: Date.now().toString(), title: "Chat mới", messages: [] };
+            chatSessions.unshift(newSession); 
+            currentSessionId = newSession.id;
+            saveSessions();
+            renderRecentList(); 
+            renderChatBox();
+            if (window.innerWidth > 768) input.focus();
+        }
+
+        function deleteSingleChat(id, event) {
+            event.stopPropagation();
+            chatSessions = chatSessions.filter(s => s.id !== id);
+            saveSessions();
+            if (chatSessions.length === 0) {
+                createNewChat();
+            } else {
+                if (currentSessionId === id) {
+                    currentSessionId = chatSessions[0].id;
+                }
+                renderRecentList();
+                renderChatBox();
+            }
+        }
+
+        async function clearAllChats() {
+            if (!confirm("Bạn có chắc chắn muốn xoá toàn bộ lịch sử trò chuyện không?")) return;
+            chatSessions = [];
+            localStorage.removeItem(STORAGE_KEY);
+            localStorage.removeItem('lumina_chats');
+            try {
+                await fetch('/api/user/clear_history', { method: 'POST' });
+            } catch (e) {}
+            createNewChat();
+            toggleSettings();
+        }
+
+        function exportChatHistory() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(chatSessions, null, 2));
+            const a = document.createElement('a');
+            a.setAttribute("href", dataStr);
+            a.setAttribute("download", `lumina_chat_${CURRENT_USER}.json`);
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        }
+
+        async function changeUserPassword() {
+            const old_password = document.getElementById('oldPwInput').value;
+            const new_password = document.getElementById('newPwInput').value;
+            const confirm_password = document.getElementById('confirmPwInput').value;
+
+            if (!old_password || !new_password) return alert("Vui lòng nhập đầy đủ mật khẩu!");
+            if (new_password !== confirm_password) return alert("Mật khẩu xác nhận không khớp!");
+            if (new_password.length < 3) return alert("Mật khẩu mới phải từ 3 ký tự trở lên!");
+
+            try {
+                const res = await fetch('/api/user/change_password', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ old_password, new_password })
+                });
+                const data = await res.json();
+                alert(data.message);
+                if (data.success) {
+                    document.getElementById('oldPwInput').value = '';
+                    document.getElementById('newPwInput').value = '';
+                    document.getElementById('confirmPwInput').value = '';
+                }
+            } catch (e) {
+                alert("Lỗi kết nối máy chủ!");
+            }
+        }
+
+        function loadSession(id) {
+            currentSessionId = id;
+            renderRecentList();
+            renderChatBox();
+        }
+
+        function saveSessions() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(chatSessions));
+        }
 
         function renderRecentList() {
-            recentList.querySelectorAll('.recent-item').forEach(i => i.remove());
+            recentList.innerHTML = '<div class="recent-title">Gần đây</div>';
             chatSessions.forEach(session => {
-                const div = document.createElement('div'); div.className = 'recent-item';
-                if(session.id === currentSessionId) { div.style.borderColor = 'var(--primary)'; div.style.background = 'var(--bg-recent-hover)'; }
-                let displayTitle = session.title; let displaySub = "Chưa có tin nhắn";
-                if(session.messages.length > 0) {
-                    const firstUserMsg = session.messages.find(m => m.role === 'user');
-                    if (firstUserMsg) displayTitle = firstUserMsg.text.substring(0, 25) + (firstUserMsg.text.length > 25 ? '...' : '');
-                    displaySub = session.messages[session.messages.length - 1].text.substring(0, 35) + '...';
+                const div = document.createElement('div');
+                div.className = 'recent-item';
+                if (session.id === currentSessionId) {
+                    div.style.borderColor = 'var(--primary)';
+                    div.style.background = 'var(--bg-recent-hover)';
                 }
-                div.innerHTML = `<div class="recent-q">${displayTitle}</div><div class="recent-a">${displaySub}</div>`;
-                div.onclick = () => loadChatSession(session.id);
-                recentList.querySelector('.recent-title').insertAdjacentElement('afterend', div);
+                
+                const titleSpan = document.createElement('span');
+                titleSpan.className = 'recent-item-title';
+                titleSpan.innerText = session.title;
+
+                const delBtn = document.createElement('button');
+                delBtn.className = 'recent-del-btn';
+                delBtn.innerHTML = '🗑️';
+                delBtn.title = 'Xoá cuộc trò chuyện này';
+                delBtn.onclick = (ev) => deleteSingleChat(session.id, ev);
+
+                div.appendChild(titleSpan);
+                div.appendChild(delBtn);
+
+                div.onclick = () => {
+                    loadSession(session.id);
+                    closeSidebarOnMobile();
+                };
+                recentList.appendChild(div);
             });
         }
 
         function renderChatBox() {
-            chatBox.innerHTML = '';
+            chatBox.innerHTML = `
+                <div class="msg bot" style="align-self: center; text-align: center; border: none; background: transparent; color: var(--text-muted); margin: auto 0;">
+                    <h3>Xin chào ${CURRENT_USER}! 👋</h3>
+                    <p>Tôi có thể giúp gì cho bạn hôm nay?</p>
+                </div>`;
+            
             const session = chatSessions.find(s => s.id === currentSessionId);
-            if (!session || session.messages.length === 0) {
-                chatBox.innerHTML = `<div class="msg bot">Xin chào <b>${username}</b>! Tôi là Lumina AI. Hãy chọn model ở thanh bên trên và bắt đầu trò chuyện hoặc tạo ảnh nhé.</div>`;
-                return;
+            if (session && session.messages.length > 0) {
+                chatBox.innerHTML = '';
+                session.messages.forEach(msg => {
+                    appendMessageToDOM(msg.role, msg.html || msg.text);
+                });
             }
-            session.messages.forEach(msg => {
-                const div = document.createElement('div'); div.className = `msg ${msg.role}`; div.innerHTML = msg.html;
-                chatBox.appendChild(div);
-            });
+            scrollToBottom();
+        }
+
+        function appendMessageToDOM(role, content) {
+            const div = document.createElement('div');
+            div.className = `msg ${role}`;
+            div.innerHTML = content;
+            chatBox.appendChild(div);
+        }
+
+        function scrollToBottom() {
             chatBox.scrollTop = chatBox.scrollHeight;
         }
 
-        if (localStorage.getItem('lumina_dark_mode') === 'true') { document.body.classList.add('dark-mode'); darkModeToggle.checked = true; }
-        darkModeToggle.addEventListener('change', (e) => {
-            if (e.target.checked) { document.body.classList.add('dark-mode'); localStorage.setItem('lumina_dark_mode', 'true'); }
-            else { document.body.classList.remove('dark-mode'); localStorage.setItem('lumina_dark_mode', 'false'); }
-        });
-        function toggleSettings() { settingsModal.classList.toggle('active'); }
-        settingsModal.addEventListener('click', (e) => { if(e.target === settingsModal) toggleSettings(); });
-
-        // Xử lý Gửi tin nhắn Chat
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const text = input.value.trim(); if(!text) return;
-            if (!currentSessionId) createNewChat();
+            const text = input.value.trim();
+            if (!text) return;
+
+            const selectedModel = modelSelect.value;
             const session = chatSessions.find(s => s.id === currentSessionId);
-            const selectedModelId = modelSelect.value;
+            
+            if (session.messages.length === 0) chatBox.innerHTML = '';
+            appendMessageToDOM('user', text);
+            input.value = '';
             
             session.messages.push({ role: 'user', text: text, html: text });
-            input.value = ''; renderChatBox();
+            if (session.messages.length === 1) {
+                session.title = text.substring(0, 30) + (text.length > 30 ? '...' : '');
+                renderRecentList();
+            }
+            saveSessions();
+            scrollToBottom();
 
-            const typingDiv = document.createElement('div'); typingDiv.className = 'msg bot'; typingDiv.textContent = 'Đang suy nghĩ...';
-            chatBox.appendChild(typingDiv); chatBox.scrollTop = chatBox.scrollHeight;
+            const typingId = 'typing-' + Date.now();
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'msg bot';
+            typingDiv.id = typingId;
+            typingDiv.innerHTML = '<div class="typing-indicator"><span></span><span></span><span></span></div>';
+            chatBox.appendChild(typingDiv);
+            scrollToBottom();
+
+            sendBtn.disabled = true;
 
             try {
                 const res = await fetch('/api/chat', {
-                    method: 'POST', headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ message: text, model_id: selectedModelId })
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ message: text, model_id: selectedModel })
                 });
                 const data = await res.json();
-                typingDiv.remove(); 
+                
+                const tEl = document.getElementById(typingId);
+                if (tEl) tEl.remove();
 
-                if(data.error) {
-                    const errorHtml = `<span style="color:#ef5350;">⚠️ ${data.error}</span>`;
-                    session.messages.push({ role: 'bot', text: data.error, html: errorHtml });
-                    renderChatBox(); renderRecentList();
-                    if(data.error.includes("giới hạn")) { input.disabled = true; sendBtn.disabled = true; input.placeholder = "Đã đạt giới hạn, vui lòng quay lại ngày mai!"; }
+                if (res.ok) {
+                    appendMessageToDOM('bot', data.reply_html);
+                    session.messages.push({ role: 'bot', text: data.reply_text || '', html: data.reply_html });
+                    saveSessions();
+                    if (data.used_msgs !== undefined) {
+                        document.getElementById('topQuotaCount').innerText = data.used_msgs;
+                        document.getElementById('settingQuotaText').innerText = `${data.used_msgs} / ${data.max_msgs} tin nhắn`;
+                    }
                 } else {
-                    session.messages.push({ role: 'bot', text: typingDiv.innerText, html: data.reply_html });
-                    renderChatBox(); renderRecentList();
+                    appendMessageToDOM('bot', `<span style="color:#e53935;">⚠️ ${data.error}</span>`);
                 }
             } catch (err) {
-                typingDiv.remove();
-                const errorHtml = `<span style="color:#ef5350;">⚠️ Lỗi kết nối server</span>`;
-                session.messages.push({ role: 'bot', text: "Lỗi kết nối server", html: errorHtml });
-                renderChatBox(); renderRecentList();
+                const tEl = document.getElementById(typingId);
+                if (tEl) tEl.remove();
+                appendMessageToDOM('bot', `<span style="color:#e53935;">⚠️ Lỗi kết nối máy chủ!</span>`);
+            } finally {
+                sendBtn.disabled = false;
+                scrollToBottom();
+                if (window.innerWidth > 768) input.focus();
             }
         });
 
-        // Xử lý Tạo ảnh bằng Hugging Face
-        document.getElementById('imgBtn').addEventListener('click', async () => {
+        imgBtn.addEventListener('click', async () => {
             const prompt = input.value.trim();
-            if(!prompt) return alert("Vui lòng nhập mô tả ảnh bạn muốn tạo!");
+            if (!prompt) {
+                alert("Vui lòng nhập mô tả bức ảnh bạn muốn tạo!");
+                return;
+            }
 
-            if (!currentSessionId) createNewChat();
             const session = chatSessions.find(s => s.id === currentSessionId);
+            if (session.messages.length === 0) chatBox.innerHTML = '';
+            
+            const userMsgHtml = `🎨 Tạo ảnh: <i>${prompt}</i>`;
+            appendMessageToDOM('user', userMsgHtml);
+            session.messages.push({ role: 'user', text: userMsgHtml, html: userMsgHtml });
+            if (session.messages.length === 1) {
+                session.title = "🎨 " + prompt.substring(0, 25);
+                renderRecentList();
+            }
+            input.value = ''; 
+            saveSessions();
+            scrollToBottom();
 
-            session.messages.push({ role: 'user', text: prompt, html: `🎨 Tạo ảnh: ${prompt}` });
-            input.value = ''; renderChatBox();
-
-            const statusDiv = document.createElement('div'); statusDiv.className = 'msg bot'; 
-            statusDiv.innerHTML = '<span style="color:#ff9800;">🎨 Đang vẽ ảnh... (Có thể mất vài giây)</span>';
-            chatBox.appendChild(statusDiv); chatBox.scrollTop = chatBox.scrollHeight;
+            const typingId = 'typing-' + Date.now();
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'msg bot'; 
+            typingDiv.id = typingId;
+            typingDiv.innerHTML = '<div class="typing-indicator"><span></span><span></span><span></span></div>';
+            chatBox.appendChild(typingDiv); 
+            scrollToBottom();
+            imgBtn.disabled = true;
 
             try {
                 const res = await fetch('/api/generate-image', {
-                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ prompt: prompt })
                 });
                 const data = await res.json();
-                statusDiv.remove();
+                const tEl = document.getElementById(typingId);
+                if (tEl) tEl.remove();
 
-                if(data.error) {
-                    const errorHtml = `<span style="color:#ef5350;">⚠️ ${data.error}</span>`;
-                    session.messages.push({ role: 'bot', text: data.error, html: errorHtml });
+                if (res.ok) {
+                    const imgHtml = `<img src="${data.image_base64}" alt="${prompt}">`;
+                    appendMessageToDOM('bot', imgHtml);
+                    session.messages.push({ role: 'bot', text: 'Đã tạo ảnh', html: imgHtml });
+                    saveSessions();
                 } else {
-                    const htmlContent = `<img src="${data.image_base64}" style="max-width: 100%; border-radius: 12px; margin-top: 5px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" />`;
-                    session.messages.push({ role: 'bot', text: "[Hình ảnh được tạo]", html: htmlContent });
+                    appendMessageToDOM('bot', `<span style="color:#e53935;">⚠️ ${data.error}</span>`);
                 }
-                renderChatBox(); renderRecentList();
             } catch (err) {
-                statusDiv.remove();
-                const errorHtml = `<span style="color:#ef5350;">⚠️ Lỗi kết nối server</span>`;
-                session.messages.push({ role: 'bot', text: "Lỗi kết nối", html: errorHtml });
-                renderChatBox();
+                const tEl = document.getElementById(typingId);
+                if (tEl) tEl.remove();
+                appendMessageToDOM('bot', `<span style="color:#e53935;">⚠️ Lỗi kết nối!</span>`);
+            } finally {
+                imgBtn.disabled = false;
+                scrollToBottom();
             }
         });
 
-        createNewChat();
+        init();
     </script>
 </body>
 </html>
