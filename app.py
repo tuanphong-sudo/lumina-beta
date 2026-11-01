@@ -1,4 +1,5 @@
 import os
+import json
 import sqlite3
 import requests
 import markdown
@@ -25,7 +26,6 @@ load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "lumina_default_key_change_me")
-# Giữ đăng nhập 30 ngày kể cả khi đóng tab hoặc tắt trình duyệt
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
@@ -136,6 +136,8 @@ def init_db():
                      (id SERIAL PRIMARY KEY, username VARCHAR(255), prompt TEXT, image_data TEXT, created_at TEXT)''')
         c.execute('''CREATE TABLE IF NOT EXISTS chat_logs 
                      (id SERIAL PRIMARY KEY, username VARCHAR(255), model_name TEXT, user_msg TEXT, bot_reply TEXT, created_at TEXT)''')
+        c.execute('''CREATE TABLE IF NOT EXISTS user_sessions 
+                     (session_id VARCHAR(100) PRIMARY KEY, username VARCHAR(255), title TEXT, messages_json TEXT, updated_at TEXT)''')
         try:
             c.execute("ALTER TABLE images ADD COLUMN IF NOT EXISTS image_data TEXT")
         except Exception:
@@ -148,6 +150,8 @@ def init_db():
                      (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, prompt TEXT, image_data TEXT, created_at TEXT)''')
         c.execute('''CREATE TABLE IF NOT EXISTS chat_logs 
                      (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, model_name TEXT, user_msg TEXT, bot_reply TEXT, created_at TEXT)''')
+        c.execute('''CREATE TABLE IF NOT EXISTS user_sessions 
+                     (session_id TEXT PRIMARY KEY, username TEXT, title TEXT, messages_json TEXT, updated_at TEXT)''')
         try:
             c.execute("ALTER TABLE images ADD COLUMN image_data TEXT")
         except Exception:
@@ -158,6 +162,23 @@ def init_db():
     conn.close()
 
 init_db()
+
+def upsert_chat_session(conn, session_id, username, title, messages_list):
+    """Hàm lưu hoặc cập nhật phiên trò chuyện của người dùng vào Database"""
+    c = conn.cursor()
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    msg_json = json.dumps(messages_list, ensure_ascii=False)
+    
+    c.execute(f"SELECT session_id FROM user_sessions WHERE session_id = {P()} AND username = {P()}", (session_id, username))
+    exists = c.fetchone()
+    if exists:
+        c.execute(f"UPDATE user_sessions SET title = {P()}, messages_json = {P()}, updated_at = {P()} WHERE session_id = {P()} AND username = {P()}",
+                  (title, msg_json, now_str, session_id, username))
+    else:
+        c.execute(f"INSERT INTO user_sessions (session_id, username, title, messages_json, updated_at) VALUES ({P()}, {P()}, {P()}, {P()}, {P()})",
+                  (session_id, username, title, msg_json, now_str))
+    conn.commit()
+    c.close()
 
 # ==========================================
 # 4. DECORATORS
@@ -179,11 +200,10 @@ def admin_required(f):
     return decorated_function
 
 # ==========================================
-# 5. ROUTES: AUTH, USER SETTINGS & CHAT
+# 5. ROUTES: AUTH, LỊCH SỬ SESSION & CHAT
 # ==========================================
 @app.route('/login', methods=['GET', 'POST'])
 def login_page():
-    # Nếu đã đăng nhập từ trước, tự động chuyển thẳng vào trang chat
     if request.method == 'GET' and 'user_id' in session:
         return redirect(url_for('index'))
 
@@ -283,6 +303,74 @@ def index():
         models=get_all_models()
     )
 
+# --- CÁC API QUẢN LÝ LỊCH SỬ TRÒ CHUYỆN ĐỒNG BỘ DATABASE ---
+@app.route('/api/sessions', methods=['GET'])
+@login_required
+def get_user_sessions():
+    conn = get_db()
+    c = get_cursor(conn)
+    c.execute(f"SELECT session_id, title, messages_json, updated_at FROM user_sessions WHERE username = {P()} ORDER BY updated_at DESC", (session['username'],))
+    rows = c.fetchall()
+    c.close()
+    conn.close()
+    
+    result = []
+    for r in rows:
+        try:
+            msgs = json.loads(r['messages_json']) if r['messages_json'] else []
+        except Exception:
+            msgs = []
+        result.append({
+            "id": r['session_id'],
+            "title": r['title'] or "Chat mới",
+            "messages": msgs,
+            "updated_at": r['updated_at']
+        })
+    return jsonify({"sessions": result})
+
+@app.route('/api/sessions/save', methods=['POST'])
+@login_required
+def save_user_session():
+    data = request.json
+    session_id = str(data.get('id', '')).strip()
+    title = data.get('title', 'Chat mới').strip()
+    messages = data.get('messages', [])
+    
+    if not session_id:
+        return jsonify({"error": "Thiếu ID cuộc trò chuyện"}), 400
+        
+    conn = get_db()
+    upsert_chat_session(conn, session_id, session['username'], title, messages)
+    conn.close()
+    return jsonify({"success": True})
+
+@app.route('/api/sessions/sync_bulk', methods=['POST'])
+@login_required
+def sync_bulk_sessions():
+    """Đồng bộ các đoạn chat cũ từ localStorage lên Database"""
+    data = request.json
+    local_sessions = data.get('sessions', [])
+    conn = get_db()
+    for s in local_sessions:
+        s_id = str(s.get('id', '')).strip()
+        s_title = s.get('title', 'Chat mới')
+        s_msgs = s.get('messages', [])
+        if s_id and s_msgs:
+            upsert_chat_session(conn, s_id, session['username'], s_title, s_msgs)
+    conn.close()
+    return jsonify({"success": True})
+
+@app.route('/api/sessions/delete/<session_id>', methods=['POST'])
+@login_required
+def delete_user_session(session_id):
+    conn = get_db()
+    c = conn.cursor()
+    c.execute(f"DELETE FROM user_sessions WHERE session_id = {P()} AND username = {P()}", (str(session_id), session['username']))
+    conn.commit()
+    c.close()
+    conn.close()
+    return jsonify({"success": True})
+
 @app.route('/api/user/change_password', methods=['POST'])
 @login_required
 def user_change_password():
@@ -315,6 +403,7 @@ def user_change_password():
 def user_clear_history():
     conn = get_db()
     c = conn.cursor()
+    c.execute(f"DELETE FROM user_sessions WHERE username = {P()}", (session['username'],))
     c.execute(f"DELETE FROM chat_logs WHERE username = {P()}", (session['username'],))
     conn.commit()
     c.close()
@@ -327,6 +416,7 @@ def chat():
     data = request.json
     user_message = data.get('message', '').strip()
     model_id = data.get('model_id', 'lite_1')
+    session_id = str(data.get('session_id', '')).strip()
 
     if not user_message:
         return jsonify({"error": "Tin nhắn không được để trống"}), 400
@@ -375,12 +465,31 @@ def chat():
         conn.close()
         return jsonify({"error": "Tài khoản của bạn chưa được cấp quyền dùng model Pro này."}), 403
 
+    # Lấy lịch sử tin nhắn của phiên hiện tại để gửi ngữ cảnh (context) cho AI
+    existing_msgs = []
+    session_title = user_message[:30] + ('...' if len(user_message) > 30 else '')
+    if session_id:
+        c.execute(f"SELECT title, messages_json FROM user_sessions WHERE session_id = {P()} AND username = {P()}", (session_id, session['username']))
+        s_row = c.fetchone()
+        if s_row:
+            try:
+                existing_msgs = json.loads(s_row['messages_json']) if s_row['messages_json'] else []
+            except Exception:
+                existing_msgs = []
+            if s_row['title'] and s_row['title'] != 'Chat mới':
+                session_title = s_row['title']
+
+    api_messages = [{"role": "system", "content": "Bạn là Lumina AI. Trả lời bằng tiếng Việt. LUÔN sử dụng định dạng Markdown."}]
+    # Kèm tối đa 10 tin nhắn gần nhất trong cuộc hội thoại để AI nhớ mạch truyện
+    for m in existing_msgs[-10:]:
+        if m.get('type') != 'image' and m.get('text'):
+            role_api = "assistant" if m.get('role') == 'bot' else "user"
+            api_messages.append({"role": role_api, "content": m.get('text')})
+    api_messages.append({"role": "user", "content": user_message})
+
     payload = {
         "model": selected_model['model'],
-        "messages": [
-            {"role": "system", "content": "Bạn là Lumina AI. Trả lời bằng tiếng Việt. LUÔN sử dụng định dạng Markdown."},
-            {"role": "user", "content": user_message}
-        ],
+        "messages": api_messages,
         "temperature": 0.7
     }
     headers = {"Authorization": f"Bearer {selected_model['token']}", "Content-Type": "application/json"}
@@ -401,11 +510,19 @@ def chat():
                   (session['username'], selected_model['name'], user_message, reply_text, now_full))
         conn.commit()
         c.close()
+
+        # Tự động lưu cuộc hội thoại vào bảng user_sessions trên Server
+        if session_id:
+            existing_msgs.append({"role": "user", "text": user_message, "html": user_message})
+            existing_msgs.append({"role": "bot", "text": reply_text, "html": reply_html})
+            upsert_chat_session(conn, session_id, session['username'], session_title, existing_msgs)
+
         conn.close()
         
         return jsonify({
             "reply_text": reply_text,
             "reply_html": reply_html, 
+            "session_title": session_title,
             "used_msgs": current_count + 1,
             "max_msgs": max_msgs,
             "timestamp": datetime.now().strftime("%H:%M:%S")
@@ -423,6 +540,7 @@ def chat():
 def generate_image():
     data = request.json
     prompt = data.get('prompt', '').strip()
+    session_id = str(data.get('session_id', '')).strip()
 
     if not prompt:
         return jsonify({"error": "Mô tả ảnh không được để trống"}), 400
@@ -452,13 +570,35 @@ def generate_image():
         full_base64 = f"data:image/png;base64,{img_str}"
 
         conn = get_db()
-        c = conn.cursor()
+        c = get_cursor(conn)
         c.execute(f"INSERT INTO images (username, prompt, image_data, created_at) VALUES ({P()}, {P()}, {P()}, {P()})",
                      (session['username'], prompt, full_base64, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
         conn.commit()
-        c.close()
-        conn.close()
 
+        # Lưu ảnh vào lịch sử phiên trò chuyện hiện tại trên Database
+        if session_id:
+            c.execute(f"SELECT title, messages_json FROM user_sessions WHERE session_id = {P()} AND username = {P()}", (session_id, session['username']))
+            s_row = c.fetchone()
+            existing_msgs = []
+            session_title = "🎨 " + prompt[:25]
+            if s_row:
+                try:
+                    existing_msgs = json.loads(s_row['messages_json']) if s_row['messages_json'] else []
+                except Exception:
+                    existing_msgs = []
+                if s_row['title'] and s_row['title'] != 'Chat mới':
+                    session_title = s_row['title']
+            
+            user_html = f"🎨 Tạo ảnh: <i>{prompt}</i>"
+            bot_html = f'<img src="{full_base64}" alt="{prompt}">'
+            existing_msgs.append({"role": "user", "text": user_html, "html": user_html, "type": "image"})
+            existing_msgs.append({"role": "bot", "text": "Đã tạo ảnh", "html": bot_html, "type": "image"})
+            c.close()
+            upsert_chat_session(conn, session_id, session['username'], session_title, existing_msgs)
+        else:
+            c.close()
+
+        conn.close()
         return jsonify({"image_base64": full_base64})
 
     except Exception as e:
@@ -664,6 +804,7 @@ def clear_all_chats():
     conn = get_db()
     c = conn.cursor()
     c.execute("DELETE FROM chat_logs")
+    c.execute("DELETE FROM user_sessions")
     conn.commit()
     c.close()
     conn.close()
