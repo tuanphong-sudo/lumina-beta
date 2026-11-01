@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Lumina AI</title>
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%231e88e5'/%3E%3Cpath d='M55 15 L30 55 L48 55 L42 85 L72 42 L52 42 Z' fill='white'/%3E%3C/svg%3E" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%231e88e5'/%3E%3Cpath d='M55 15 L30 55 L48 55 L42 85 L72 42 L52 42 Z' fill='white'/%3E%3C/svg%3E" />
     
     <style>
         :root { 
@@ -61,25 +61,41 @@
         .msg { max-width: 82%; padding: 14px 18px; border-radius: 16px; line-height: 1.6; font-size: var(--chat-font-size); word-wrap: break-word; overflow-wrap: break-word; }
         .msg.user { align-self: flex-end; background: var(--msg-user-bg); color: var(--msg-user-text); border-bottom-right-radius: 4px; }
         .msg.bot { align-self: flex-start; background: var(--bg-msg-bot); color: var(--text-main); border: 1px solid var(--border-color); border-bottom-left-radius: 4px; max-width: 85%; }
-        .msg.bot img { max-width: 100%; height: auto; border-radius: 8px; margin-top: 8px; display: block; }
+        .msg.bot img, .msg.user img { max-width: 100%; height: auto; border-radius: 8px; margin-top: 8px; display: block; }
         
-        /* Markdown Styles */
+        /* --- CODE BLOCK HEADER (NGÔN NGỮ + COPY + TẢI FILE) --- */
         .msg.bot table { width: 100%; border-collapse: collapse; margin: 10px 0; display: block; overflow-x: auto; }
         .msg.bot th, .msg.bot td { border: 1px solid var(--border-color); padding: 8px; text-align: left; }
-        .msg.bot pre { background: var(--pre-bg); color: var(--pre-text); padding: 12px; border-radius: 8px; overflow-x: auto; margin: 10px 0; font-size: 13.5px; max-width: 100%; }
+        
+        .code-wrapper { margin: 12px 0; border-radius: 8px; overflow: hidden; border: 1px solid #3e4451; background: var(--pre-bg); }
+        .code-header { display: flex; justify-content: space-between; align-items: center; background: #1e2227; color: #abb2bf; padding: 6px 12px; font-size: 12px; border-bottom: 1px solid #333842; }
+        .code-lang-label { font-family: Consolas, monospace; font-weight: bold; color: #61afef; text-transform: uppercase; letter-spacing: 0.5px; }
+        .code-actions { display: flex; gap: 6px; }
+        .code-btn { background: #2c313a; color: #dcdcdc; border: 1px solid #444b58; border-radius: 5px; padding: 3px 8px; font-size: 11.5px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; transition: 0.2s; }
+        .code-btn:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+        .msg.bot pre { background: var(--pre-bg); color: var(--pre-text); padding: 12px; overflow-x: auto; margin: 0; font-size: 13.5px; max-width: 100%; }
         .msg.bot code { font-family: Consolas, monospace; background: var(--code-bg); padding: 2px 6px; border-radius: 4px; color: var(--text-main); word-break: break-word; }
-        .msg.bot pre code { background: transparent; padding: 0; color: inherit; }
+        .msg.bot pre code { background: transparent; padding: 0; color: inherit; word-break: normal; }
         .msg.bot p { margin-bottom: 10px; } .msg.bot p:last-child { margin-bottom: 0; }
         
-        /* Input Bar */
+        /* --- KHUNG XEM TRƯỚC ẢNH IMPORT (PREVIEW BAR) --- */
+        .img-preview-bar { display: none; padding: 10px 20px; background: var(--bg-input); border-top: 1px solid var(--border-color); align-items: center; gap: 12px; flex-shrink: 0; }
+        .img-preview-bar.active { display: flex; }
+        .preview-thumb-wrap { position: relative; display: inline-block; }
+        .preview-thumb { width: 58px; height: 58px; object-fit: cover; border-radius: 8px; border: 2px solid var(--primary); }
+        .preview-remove-btn { position: absolute; top: -6px; right: -6px; width: 20px; height: 20px; border-radius: 50%; background: #e53935; color: white; border: none; font-size: 11px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .preview-info { font-size: 13px; color: var(--text-muted); flex: 1; }
+
+        /* --- INPUT BAR --- */
         .input-bar { padding: 12px 20px; background: var(--bg-input); border-top: 1px solid var(--border-color); display: flex; gap: 10px; align-items: center; flex-shrink: 0; padding-bottom: max(12px, env(safe-area-inset-bottom)); }
-        .input-bar input { flex: 1; padding: 12px 18px; border: 1px solid var(--border-color); border-radius: 25px; outline: none; font-size: 16px; background: var(--bg-body); color: var(--text-main); min-width: 0; }
-        .input-bar input:focus { border-color: var(--primary); }
+        .input-bar input[type="text"] { flex: 1; padding: 12px 18px; border: 1px solid var(--border-color); border-radius: 25px; outline: none; font-size: 16px; background: var(--bg-body); color: var(--text-main); min-width: 0; }
+        .input-bar input[type="text"]:focus { border-color: var(--primary); }
         .input-bar button { width: 46px; height: 46px; border-radius: 50%; border: none; color: white; font-size: 18px; cursor: pointer; display: flex; justify-content: center; align-items: center; flex-shrink: 0; transition: transform 0.1s; }
         .input-bar button:active { transform: scale(0.92); }
-        .btn-img { background: #ff9800; }
+        .btn-attach { background: #26a69a; }
         .btn-send { background: var(--primary); }
-        .btn-send:disabled, .btn-img:disabled { background: #9e9e9e; cursor: not-allowed; }
+        .btn-send:disabled, .btn-attach:disabled { background: #9e9e9e; cursor: not-allowed; }
 
         /* Loading Animation */
         .typing-indicator { display: flex; gap: 4px; padding: 8px 12px; align-items: center; height: 24px; }
@@ -117,7 +133,6 @@
         .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 999; opacity: 0; transition: opacity 0.3s; }
         .sidebar-overlay.active { display: block; opacity: 1; }
 
-        /* Responsive Breakpoints */
         @media (max-width: 1024px) {
             .sidebar { width: 250px; }
             .msg, .msg.bot { max-width: 88%; }
@@ -130,7 +145,7 @@
             .msg, .msg.bot { max-width: 92%; padding: 12px 15px; }
             .chat-box { padding: 14px; gap: 12px; }
             .input-bar { padding: 10px 12px; gap: 8px; padding-bottom: max(10px, env(safe-area-inset-bottom)); }
-            .input-bar input { font-size: 16px; padding: 10px 15px; }
+            .input-bar input[type="text"] { font-size: 16px; padding: 10px 15px; }
             .input-bar button { width: 42px; height: 42px; font-size: 16px; }
         }
         @media (max-width: 380px) {
@@ -153,7 +168,7 @@
         <div class="recent-tab" id="recentList">
             <div class="recent-title">
                 <span>Lịch sử đã lưu</span>
-                <span class="sync-badge" id="syncStatus">☁️ Đã đồng bộ</span>
+                <span class="sync-badge">☁️ Đã đồng bộ</span>
             </div>
         </div>
         <div class="sidebar-footer">
@@ -170,7 +185,6 @@
                 <span style="cursor:pointer; padding: 4px 8px;" onclick="toggleSettings()">✖</span>
             </div>
 
-            <!-- Thông tin tài khoản -->
             <div class="setting-section-title">👤 Thông tin tài khoản</div>
             <div class="setting-item">
                 <span>Tài khoản</span>
@@ -187,7 +201,6 @@
             </div>
             {% endif %}
 
-            <!-- Giao diện -->
             <div class="setting-section-title">🎨 Giao diện hiển thị</div>
             <div class="setting-item">
                 <span>🌙 Chế độ tối (Dark Mode)</span>
@@ -202,12 +215,10 @@
                 </select>
             </div>
 
-            <!-- Quản lý dữ liệu trò chuyện -->
             <div class="setting-section-title">💬 Lịch sử trò chuyện (Cloud & Máy)</div>
             <button class="btn-setting-action btn-secondary-action" onclick="exportChatHistory()">📥 Tải xuống toàn bộ lịch sử (.json)</button>
             <button class="btn-setting-action btn-danger-action" onclick="clearAllChats()">🗑️ Xoá tất cả lịch sử trò chuyện</button>
 
-            <!-- Đổi mật khẩu tài khoản -->
             <div class="setting-section-title">🔒 Đổi mật khẩu tài khoản</div>
             <input type="password" id="oldPwInput" class="setting-input" placeholder="Nhập mật khẩu hiện tại">
             <input type="password" id="newPwInput" class="setting-input" placeholder="Nhập mật khẩu mới (tối thiểu 3 ký tự)">
@@ -227,7 +238,7 @@
             <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
             <span style="font-weight: bold; flex: 1; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">⚡ Lumina AI</span>
             <select class="model-select" id="mobileModelSelect" style="max-width: 135px; font-size: 12px; padding: 5px 8px;">
-                {% for m in models %}<option value="{{ m.id }}" {% if m.is_pro and not is_pro %}disabled>🔒 {{ m.name.split('(')[0] }}{% else %}>{{ m.name }}{% endif %}</option>{% endfor %}
+                {% for m in models %}<option value="{{ m.id }}" {% if m.is_pro and not is_pro %}disabled>🔒 {{ m.name }}{% else %}>{{ m.name }}{% endif %}</option>{% endfor %}
             </select>
         </div>
 
@@ -240,10 +251,23 @@
         </div>
 
         <div class="chat-box" id="chatBox"></div>
+
+        <!-- Khung xem trước ảnh khi người dùng chọn hoặc Ctrl+V -->
+        <div class="img-preview-bar" id="imgPreviewBar">
+            <div class="preview-thumb-wrap">
+                <img src="" id="imgPreviewThumb" class="preview-thumb" alt="Preview">
+                <button type="button" class="preview-remove-btn" onclick="clearSelectedImage()" title="Xoá ảnh">✖</button>
+            </div>
+            <div class="preview-info">
+                <b>📷 Đã đính kèm hình ảnh</b>
+                <div>Nhập câu hỏi về bức ảnh này rồi nhấn Gửi ➤</div>
+            </div>
+        </div>
         
         <form class="input-bar" id="chatForm">
-            <input type="text" id="msgInput" placeholder="Nhập tin nhắn hoặc mô tả ảnh..." autocomplete="off" required>
-            <button type="button" class="btn-img" id="imgBtn" title="Tạo ảnh từ mô tả">🎨</button>
+            <input type="file" id="imageFileInput" accept="image/*" style="display:none;">
+            <button type="button" class="btn-attach" id="attachBtn" title="Import ảnh để AI nhận diện (hoặc nhấn Ctrl+V)" onclick="document.getElementById('imageFileInput').click()">📷</button>
+            <input type="text" id="msgInput" placeholder="Nhập tin nhắn, gửi ảnh 📷 hoặc nói 'Tạo ảnh ...'" autocomplete="off">
             <button type="submit" class="btn-send" id="sendBtn" title="Gửi tin nhắn">➤</button>
         </form>
     </div>
@@ -256,7 +280,10 @@
         const form = document.getElementById('chatForm');
         const input = document.getElementById('msgInput');
         const sendBtn = document.getElementById('sendBtn');
-        const imgBtn = document.getElementById('imgBtn');
+        const attachBtn = document.getElementById('attachBtn');
+        const imageFileInput = document.getElementById('imageFileInput');
+        const imgPreviewBar = document.getElementById('imgPreviewBar');
+        const imgPreviewThumb = document.getElementById('imgPreviewThumb');
         const recentList = document.getElementById('recentList');
         
         const modelSelect = document.getElementById('modelSelect');
@@ -269,6 +296,31 @@
         
         let chatSessions = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
         let currentSessionId = null; 
+        let pendingImageBase64 = null;
+
+        const LANG_EXT_MAP = {
+            python: 'py', py: 'py',
+            javascript: 'js', js: 'js',
+            typescript: 'ts', ts: 'ts',
+            html: 'html', htm: 'html',
+            css: 'css',
+            csharp: 'cs', cs: 'cs',
+            cpp: 'cpp', c: 'c',
+            java: 'java',
+            php: 'php',
+            sql: 'sql',
+            json: 'json',
+            xml: 'xml',
+            bash: 'sh', sh: 'sh', shell: 'sh',
+            powershell: 'ps1',
+            go: 'go',
+            rust: 'rs',
+            kotlin: 'kt',
+            swift: 'swift',
+            ruby: 'rb',
+            yaml: 'yml', yml: 'yml',
+            markdown: 'md', md: 'md'
+        };
 
         async function init() {
             if (localStorage.getItem('lumina_theme') === 'dark') {
@@ -283,18 +335,145 @@
             modelSelect.addEventListener('change', (e) => mobileModelSelect.value = e.target.value);
             mobileModelSelect.addEventListener('change', (e) => modelSelect.value = e.target.value);
 
+            imageFileInput.addEventListener('change', handleImageFileSelect);
+            window.addEventListener('paste', handlePasteImage);
+
             await syncAndLoadHistoryFromServer();
         }
 
-        // Tải lịch sử từ Database Server & Gộp lịch sử cũ trên trình duyệt nếu có
+        function handleImageFileSelect(e) {
+            const file = e.target.files[0];
+            if (file && file.type.startsWith('image/')) {
+                processAndCompressImage(file);
+            }
+            imageFileInput.value = '';
+        }
+
+        function handlePasteImage(e) {
+            const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+            for (const item of items) {
+                if (item.type.indexOf('image') === 0) {
+                    const file = item.getAsFile();
+                    processAndCompressImage(file);
+                    break;
+                }
+            }
+        }
+
+        function processAndCompressImage(file) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const maxDim = 1024;
+                    let w = img.width;
+                    let h = img.height;
+                    if (w > maxDim || h > maxDim) {
+                        if (w > h) { h = Math.round(h * (maxDim / w)); w = maxDim; }
+                        else { w = Math.round(w * (maxDim / h)); h = maxDim; }
+                    }
+                    canvas.width = w;
+                    canvas.height = h;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, w, h);
+                    pendingImageBase64 = canvas.toDataURL('image/jpeg', 0.85);
+                    imgPreviewThumb.src = pendingImageBase64;
+                    imgPreviewBar.classList.add('active');
+                    input.focus();
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function clearSelectedImage() {
+            pendingImageBase64 = null;
+            imgPreviewThumb.src = '';
+            imgPreviewBar.classList.remove('active');
+        }
+
+        function enhanceCodeBlocks(container) {
+            const preElements = container.querySelectorAll('pre');
+            preElements.forEach((pre) => {
+                if (pre.parentElement && pre.parentElement.classList.contains('code-wrapper')) return;
+
+                const codeEl = pre.querySelector('code');
+                let lang = 'text';
+                if (codeEl && codeEl.className) {
+                    const match = codeEl.className.match(/language-([a-zA-Z0-9_+-]+)/) || codeEl.className.match(/([a-zA-Z0-9_+-]+)/);
+                    if (match) lang = match[1].toLowerCase();
+                }
+
+                const rawCode = (codeEl ? codeEl.innerText : pre.innerText).trim();
+                if (lang === 'text' || !lang) {
+                    if (/^<!DOCTYPE html>|<html|<div|<script/i.test(rawCode)) lang = 'html';
+                    else if (/^(import |from .+ import |def |class |print\()/m.test(rawCode)) lang = 'python';
+                    else if (/^(const |let |var |function |console\.log)/m.test(rawCode)) lang = 'javascript';
+                    else if (/^(using System|namespace |public class )/m.test(rawCode)) lang = 'csharp';
+                    else if (/^(#include\s*<|int\s+main\s*\()/m.test(rawCode)) lang = 'cpp';
+                    else if (/^(SELECT |INSERT INTO |CREATE TABLE |UPDATE )/im.test(rawCode)) lang = 'sql';
+                }
+
+                const ext = LANG_EXT_MAP[lang] || 'txt';
+
+                const wrapper = document.createElement('div');
+                wrapper.className = 'code-wrapper';
+
+                const header = document.createElement('div');
+                header.className = 'code-header';
+
+                const langSpan = document.createElement('span');
+                langSpan.className = 'code-lang-label';
+                langSpan.innerText = `</> ${lang.toUpperCase()} (.${ext})`;
+
+                const actions = document.createElement('div');
+                actions.className = 'code-actions';
+
+                const copyBtn = document.createElement('button');
+                copyBtn.type = 'button';
+                copyBtn.className = 'code-btn';
+                copyBtn.innerHTML = '📋 Copy';
+                copyBtn.onclick = () => {
+                    navigator.clipboard.writeText(rawCode).then(() => {
+                        copyBtn.innerHTML = '✅ Đã chép!';
+                        setTimeout(() => copyBtn.innerHTML = '📋 Copy', 2000);
+                    });
+                };
+
+                const downloadBtn = document.createElement('button');
+                downloadBtn.type = 'button';
+                downloadBtn.className = 'code-btn';
+                downloadBtn.innerHTML = `⬇️ Tải .${ext}`;
+                downloadBtn.onclick = () => {
+                    const blob = new Blob([rawCode], { type: 'text/plain;charset=utf-8' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `lumina_code_${Date.now()}.${ext}`;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    URL.revokeObjectURL(url);
+                };
+
+                actions.appendChild(copyBtn);
+                actions.appendChild(downloadBtn);
+                header.appendChild(langSpan);
+                header.appendChild(actions);
+
+                pre.parentNode.insertBefore(wrapper, pre);
+                wrapper.appendChild(header);
+                wrapper.appendChild(pre);
+            });
+        }
+
         async function syncAndLoadHistoryFromServer() {
             try {
                 const res = await fetch('/api/sessions');
                 if (res.ok) {
                     const data = await res.json();
                     const serverSessions = data.sessions || [];
-                    
-                    // Nếu Server chưa có nhưng trình duyệt có lịch sử cũ -> đẩy lên Server
                     const legacyLocal = JSON.parse(localStorage.getItem(STORAGE_KEY)) || JSON.parse(localStorage.getItem('lumina_chats')) || [];
                     if (serverSessions.length === 0 && legacyLocal.length > 0) {
                         await fetch('/api/sessions/sync_bulk', {
@@ -309,7 +488,7 @@
                     }
                 }
             } catch (err) {
-                console.warn("Sử dụng bộ nhớ đệm trình duyệt khi mất kết nối:", err);
+                console.warn("Sử dụng bộ nhớ đệm trình duyệt:", err);
             }
 
             renderRecentList();
@@ -514,7 +693,7 @@
             chatBox.innerHTML = `
                 <div class="msg bot" style="align-self: center; text-align: center; border: none; background: transparent; color: var(--text-muted); margin: auto 0;">
                     <h3>Xin chào ${CURRENT_USER}! 👋</h3>
-                    <p>Tôi có thể giúp gì cho bạn hôm nay?</p>
+                    <p>Gửi tin nhắn, đính kèm ảnh 📷 để phân tích, hoặc gõ <b>"Tạo ảnh ..."</b> để vẽ tranh AI!</p>
                 </div>`;
             
             const session = chatSessions.find(s => s.id === currentSessionId);
@@ -531,6 +710,9 @@
             const div = document.createElement('div');
             div.className = `msg ${role}`;
             div.innerHTML = content;
+            if (role === 'bot') {
+                enhanceCodeBlocks(div);
+            }
             chatBox.appendChild(div);
         }
 
@@ -541,7 +723,9 @@
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             const text = input.value.trim();
-            if (!text) return;
+            const imageToSend = pendingImageBase64;
+
+            if (!text && !imageToSend) return;
 
             const selectedModel = modelSelect.value;
             let session = chatSessions.find(s => s.id === currentSessionId);
@@ -551,12 +735,20 @@
             }
             
             if (session.messages.length === 0) chatBox.innerHTML = '';
-            appendMessageToDOM('user', text);
+
+            let userDisplayHtml = text;
+            if (imageToSend) {
+                const cap = text ? `<div style="margin-top:6px;">${text}</div>` : '';
+                userDisplayHtml = `<img src="${imageToSend}" style="max-width:240px; border-radius:8px; display:block;">${cap}`;
+            }
+
+            appendMessageToDOM('user', userDisplayHtml);
             input.value = '';
+            clearSelectedImage();
             
-            session.messages.push({ role: 'user', text: text, html: text });
+            session.messages.push({ role: 'user', text: text || '[Hình ảnh]', html: userDisplayHtml });
             if (session.messages.length === 1 && session.title === "Chat mới") {
-                session.title = text.substring(0, 30) + (text.length > 30 ? '...' : '');
+                session.title = text ? (text.substring(0, 30) + (text.length > 30 ? '...' : '')) : '📷 Phân tích hình ảnh';
                 renderRecentList();
             }
             saveSessionsLocal();
@@ -571,6 +763,7 @@
             scrollToBottom();
 
             sendBtn.disabled = true;
+            attachBtn.disabled = true;
 
             try {
                 const res = await fetch('/api/chat', {
@@ -578,6 +771,7 @@
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ 
                         message: text, 
+                        image_base64: imageToSend,
                         model_id: selectedModel,
                         session_id: currentSessionId
                     })
@@ -590,6 +784,10 @@
                 if (res.ok) {
                     appendMessageToDOM('bot', data.reply_html);
                     session.messages.push({ role: 'bot', text: data.reply_text || '', html: data.reply_html });
+                    if (data.session_title) {
+                        session.title = data.session_title;
+                        renderRecentList();
+                    }
                     saveSessionsLocal();
                     if (data.used_msgs !== undefined) {
                         document.getElementById('topQuotaCount').innerText = data.used_msgs;
@@ -604,73 +802,9 @@
                 appendMessageToDOM('bot', `<span style="color:#e53935;">⚠️ Lỗi kết nối máy chủ!</span>`);
             } finally {
                 sendBtn.disabled = false;
+                attachBtn.disabled = false;
                 scrollToBottom();
                 if (window.innerWidth > 768) input.focus();
-            }
-        });
-
-        imgBtn.addEventListener('click', async () => {
-            const prompt = input.value.trim();
-            if (!prompt) {
-                alert("Vui lòng nhập mô tả bức ảnh bạn muốn tạo!");
-                return;
-            }
-
-            let session = chatSessions.find(s => s.id === currentSessionId);
-            if (!session) {
-                await createNewChat();
-                session = chatSessions.find(s => s.id === currentSessionId);
-            }
-            if (session.messages.length === 0) chatBox.innerHTML = '';
-            
-            const userMsgHtml = `🎨 Tạo ảnh: <i>${prompt}</i>`;
-            appendMessageToDOM('user', userMsgHtml);
-            session.messages.push({ role: 'user', text: userMsgHtml, html: userMsgHtml, type: 'image' });
-            if (session.messages.length === 1 && session.title === "Chat mới") {
-                session.title = "🎨 " + prompt.substring(0, 25);
-                renderRecentList();
-            }
-            input.value = ''; 
-            saveSessionsLocal();
-            scrollToBottom();
-
-            const typingId = 'typing-' + Date.now();
-            const typingDiv = document.createElement('div');
-            typingDiv.className = 'msg bot'; 
-            typingDiv.id = typingId;
-            typingDiv.innerHTML = '<div class="typing-indicator"><span></span><span></span><span></span></div>';
-            chatBox.appendChild(typingDiv); 
-            scrollToBottom();
-            imgBtn.disabled = true;
-
-            try {
-                const res = await fetch('/api/generate-image', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ 
-                        prompt: prompt,
-                        session_id: currentSessionId
-                    })
-                });
-                const data = await res.json();
-                const tEl = document.getElementById(typingId);
-                if (tEl) tEl.remove();
-
-                if (res.ok) {
-                    const imgHtml = `<img src="${data.image_base64}" alt="${prompt}">`;
-                    appendMessageToDOM('bot', imgHtml);
-                    session.messages.push({ role: 'bot', text: 'Đã tạo ảnh', html: imgHtml, type: 'image' });
-                    saveSessionsLocal();
-                } else {
-                    appendMessageToDOM('bot', `<span style="color:#e53935;">⚠️ ${data.error}</span>`);
-                }
-            } catch (err) {
-                const tEl = document.getElementById(typingId);
-                if (tEl) tEl.remove();
-                appendMessageToDOM('bot', `<span style="color:#e53935;">⚠️ Lỗi kết nối!</span>`);
-            } finally {
-                imgBtn.disabled = false;
-                scrollToBottom();
             }
         });
 

@@ -4,14 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Dev Hub - Lumina AI</title>
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%231e88e5'/%3E%3Cpath d='M55 15 L30 55 L48 55 L42 85 L72 42 L52 42 Z' fill='white'/%3E%3C/svg%3E" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%231e88e5'/%3E%3Cpath d='M55 15 L30 55 L48 55 L42 85 L72 42 L52 42 Z' fill='white'/%3E%3C/svg%3E" />
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; -webkit-tap-highlight-color: transparent; }
         html, body { width: 100%; height: 100%; height: 100dvh; overflow: hidden; background: #121212; color: #e0e0e0; position: fixed; inset: 0; }
         body { display: flex; }
         
         /* SIDEBAR */
-        .sidebar { width: 240px; height: 100%; background: #1e1e1e; border-right: 1px solid #333; display: flex; flex-direction: column; flex-shrink: 0; z-index: 1000; transition: transform 0.3s ease; }
+        .sidebar { width: 245px; height: 100%; background: #1e1e1e; border-right: 1px solid #333; display: flex; flex-direction: column; flex-shrink: 0; z-index: 1000; transition: transform 0.3s ease; }
         .sidebar-header { padding: 20px; background: #1e88e5; color: white; font-weight: bold; font-size: 20px; text-align: center; flex-shrink: 0; }
         .sidebar-menu { flex: 1; padding: 20px 10px; display: flex; flex-direction: column; gap: 6px; overflow-y: auto; }
         .menu-item { padding: 12px 15px; border-radius: 8px; cursor: pointer; color: #aaa; transition: 0.2s; font-weight: 500; font-size: 14px; }
@@ -33,7 +33,7 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 
         /* DASHBOARD CARDS */
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 15px; margin-bottom: 25px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(165px, 1fr)); gap: 15px; margin-bottom: 25px; }
         .stat-card { background: #1e1e1e; padding: 18px; border-radius: 12px; border: 1px solid #333; }
         .stat-card h3 { font-size: 13px; color: #aaa; margin-bottom: 8px; }
         .stat-card .value { font-size: 28px; font-weight: bold; color: #1e88e5; }
@@ -43,13 +43,20 @@
         .stat-card.img .value { color: #e91e63; }
         .stat-card.chat .value { color: #00bcd4; }
 
-        /* TOOLBAR & SEARCH */
+        /* TOOLBAR & FORM ADD MODEL */
         .toolbar { display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; align-items: center; margin-bottom: 15px; background: #1e1e1e; padding: 15px; border-radius: 12px; border: 1px solid #333; }
-        .search-input, .select-filter { padding: 9px 12px; background: #2a2a2a; border: 1px solid #444; color: white; border-radius: 8px; outline: none; font-size: 14px; }
+        .search-input, .select-filter { padding: 10px 12px; background: #2a2a2a; border: 1px solid #444; color: white; border-radius: 8px; outline: none; font-size: 14px; }
         .search-input { flex: 1; min-width: 180px; }
+        .search-input:focus, .select-filter:focus { border-color: #1e88e5; }
+
+        .model-form-box { background: #1e1e1e; border: 1px solid #333; border-radius: 12px; padding: 20px; margin-bottom: 22px; }
+        .model-form-box h3 { color: #1e88e5; margin-bottom: 14px; font-size: 16px; }
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; margin-bottom: 12px; }
+        .form-group { display: flex; flex-direction: column; gap: 6px; }
+        .form-group label { font-size: 12.5px; color: #aaa; font-weight: 500; }
 
         /* TABLE */
-        .table-wrap { width: 100%; overflow-x: auto; background: #1e1e1e; border-radius: 12px; border: 1px solid #333; margin-bottom: 20px; }
+        .table-wrap { width: 100%; overflow-x: auto; background: #1e1e1e; border-radius: 12px; border: 1px solid #333; margin-bottom: 22px; }
         table { width: 100%; border-collapse: collapse; min-width: 650px; }
         th, td { padding: 13px 15px; text-align: left; border-bottom: 1px solid #333; font-size: 14px; }
         th { background: #2a2a2a; color: #aaa; font-weight: 500; white-space: nowrap; }
@@ -58,9 +65,11 @@
         .badge { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; display: inline-block; }
         .badge-pro { background: rgba(255, 215, 0, 0.2); color: gold; border: 1px solid gold; }
         .badge-lite { background: rgba(76, 175, 80, 0.2); color: #4caf50; border: 1px solid #4caf50; }
+        .badge-img { background: rgba(233, 30, 99, 0.2); color: #ff4081; border: 1px solid #ff4081; }
+        .badge-env { background: rgba(0, 188, 212, 0.15); color: #00bcd4; border: 1px solid #00bcd4; }
         
         /* BUTTONS */
-        .btn { padding: 7px 11px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px; transition: 0.2s; white-space: nowrap; }
+        .btn { padding: 7px 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12.5px; transition: 0.2s; white-space: nowrap; }
         .btn:hover { opacity: 0.85; }
         .btn-edit { background: #1e88e5; color: white; }
         .btn-reset { background: #ff9800; color: white; }
@@ -74,7 +83,7 @@
         .chat-log-list { display: flex; flex-direction: column; gap: 12px; }
         .chat-log-card { background: #1e1e1e; border: 1px solid #333; border-radius: 10px; padding: 15px; }
         .chat-log-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #2a2a2a; font-size: 13px; }
-        .chat-user-tag { color: #1e88e5; font-weight: bold; cursor: pointer; }
+        .chat-user-tag { color: #1e88e5; font-weight: bold; }
         .chat-model-tag { background: #2a2a2a; padding: 3px 8px; border-radius: 4px; color: #aaa; font-size: 12px; }
         .chat-msg-block { margin-bottom: 8px; font-size: 14px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
         .chat-msg-user { color: #fff; background: #252525; padding: 8px 12px; border-radius: 6px; border-left: 3px solid #1e88e5; }
@@ -100,7 +109,7 @@
         .login-box button { width: 100%; padding: 12px; background: #1e88e5; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 15px; }
         .login-box button:hover { background: #1565c0; }
 
-        /* LIGHTBOX XEM ẢNH PHÓNG TO */
+        /* LIGHTBOX */
         .lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 3000; justify-content: center; align-items: center; flex-direction: column; padding: 20px; }
         .lightbox.active { display: flex; }
         .lightbox img { max-width: 92vw; max-height: 80dvh; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
@@ -143,7 +152,6 @@
     {% else %}
         <div class="sidebar-overlay" id="devSidebarOverlay" onclick="toggleDevSidebar()"></div>
 
-        <!-- Lightbox phóng to ảnh -->
         <div class="lightbox" id="imgLightbox" onclick="closeLightbox()">
             <img id="lightboxImg" src="" alt="Preview">
             <div class="lightbox-caption" id="lightboxCaption"></div>
@@ -153,6 +161,7 @@
             <div class="sidebar-header">⚡ Lumina Admin</div>
             <div class="sidebar-menu">
                 <div class="menu-item active" onclick="switchTab('dashboard', this)">📊 Tổng quan</div>
+                <div class="menu-item" onclick="switchTab('models', this)">🤖 Quản lý Model ({{ stats.total_models }})</div>
                 <div class="menu-item" onclick="switchTab('users', this)">👥 Quản lý User ({{ stats.total }})</div>
                 <div class="menu-item" onclick="switchTab('chats', this)">💬 Lịch sử Chat ({{ stats.total_chats }})</div>
                 <div class="menu-item" onclick="switchTab('images', this)">🖼️ Kho ảnh AI ({{ stats.total_images }})</div>
@@ -232,9 +241,148 @@
                     </div>
                 </div>
 
-                <!-- TAB 2: QUẢN LÝ USER -->
+                <!-- TAB 2: QUẢN LÝ MODEL AI (THÊM MỚI & ĐỒNG BỘ .ENV) -->
+                <div id="tab-models" class="tab-pane">
+                    <div class="model-form-box">
+                        <h3>➕ Thêm Model AI Mới (Trò chuyện hoặc Tạo ảnh)</h3>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Chức năng (1 trong 2)</label>
+                                <select id="mRoleType" class="select-filter" onchange="toggleTierSelect()">
+                                    <option value="chat">💬 Trò chuyện (Chat / Vision)</option>
+                                    <option value="image">🎨 Tạo ảnh (Image Generation)</option>
+                                </select>
+                            </div>
+                            <div class="form-group" id="mTierGroup">
+                                <label>Phân gói người dùng</label>
+                                <select id="mTier" class="select-filter">
+                                    <option value="lite">⚡ Gói LITE (Miễn phí)</option>
+                                    <option value="pro">👑 Gói PRO (Cao cấp)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Tên hiển thị (Có thể bỏ trống để tự đặt)</label>
+                                <input type="text" id="mDisplayName" class="search-input" placeholder="VD: 🚀 Lumina Pro 4.0 — DeepSeek">
+                            </div>
+                            <div class="form-group">
+                                <label>Mã Model (Model ID) *</label>
+                                <input type="text" id="mCode" class="search-input" placeholder="VD: openai/gpt-oss-120b hoặc gemini-3.1-flash-lite-image">
+                            </div>
+                            <div class="form-group">
+                                <label>API Key / Token *</label>
+                                <input type="password" id="mApiKey" class="search-input" placeholder="VD: gsk_... / sk-or-... / AQ....">
+                            </div>
+                            <div class="form-group">
+                                <label>API Link (Bỏ trống sẽ tự nhận diện)</label>
+                                <input type="text" id="mApiLink" class="search-input" placeholder="Tự nhận diện Groq / OpenRouter / Google AI">
+                            </div>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-top:8px;">
+                            <label style="font-size:13px; color:#ccc; display:flex; align-items:center; gap:6px; cursor:pointer;">
+                                <input type="checkbox" id="mSaveToEnv" checked> Ghi thêm trực tiếp vào file <b>.env</b> trên máy chủ
+                            </label>
+                            <button class="btn btn-edit" style="padding:10px 20px; font-size:14px;" onclick="addNewModel()">💾 Lưu & Kích hoạt Model</button>
+                        </div>
+                    </div>
+
+                    <h3 style="margin-bottom: 12px; color:#fff;">Danh sách Model tùy chỉnh trên Dev Hub</h3>
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Tên hiển thị</th>
+                                    <th>Mã Model (Model ID)</th>
+                                    <th>Chức năng</th>
+                                    <th>Trạng thái</th>
+                                    <th>Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if custom_models %}
+                                    {% for cm in custom_models %}
+                                    <tr>
+                                        <td>#{{ cm['id'] }}</td>
+                                        <td style="font-weight:bold; color:#fff;">{{ cm['display_name'] }}</td>
+                                        <td><code style="color:#61afef;">{{ cm['model_code'] }}</code></td>
+                                        <td>
+                                            {% if cm['role_type'] == 'image' %}
+                                                <span class="badge badge-img">🎨 Tạo ảnh</span>
+                                            {% else %}
+                                                {% if cm['tier'] == 'pro' %}
+                                                    <span class="badge badge-pro">💬 Chat PRO</span>
+                                                {% else %}
+                                                    <span class="badge badge-lite">💬 Chat LITE</span>
+                                                {% endif %}
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if cm['is_active'] %}
+                                                <span style="color:#4caf50; font-weight:bold;">● Đang bật</span>
+                                            {% else %}
+                                                <span style="color:#888;">○ Đã tắt</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-reset" onclick="toggleCustomModel({{ cm['id'] }})">
+                                                {{ 'Tắt' if cm['is_active'] else 'Bật' }}
+                                            </button>
+                                            <button class="btn btn-delete" onclick="deleteCustomModel({{ cm['id'] }})">Xoá</button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr><td colspan="6" style="text-align:center; color:#888;">Chưa có model nào được thêm qua bảng Web (Đang dùng các model tự động quét từ .env bên dưới).</td></tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <h3 style="margin-bottom: 12px; color:#fff;">Danh sách Model đang tự động nhận diện từ file <code>.env</code></h3>
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Hạng sức mạnh</th>
+                                    <th>Tên hiển thị tự động</th>
+                                    <th>Mã Model trong .env</th>
+                                    <th>Chức năng / Gói</th>
+                                    <th>Endpoint nhận diện</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for em in env_chat_models %}
+                                <tr>
+                                    <td><b>Hạng #{{ em['power_rank'] }}</b></td>
+                                    <td style="font-weight:bold; color:#fff;">{{ em['name'] }}</td>
+                                    <td><code style="color:#61afef;">{{ em['model'] }}</code></td>
+                                    <td>
+                                        {% if em['is_pro'] %}<span class="badge badge-pro">💬 Chat PRO</span>
+                                        {% else %}<span class="badge badge-lite">💬 Chat LITE</span>{% endif %}
+                                        <span class="badge badge-env">.env</span>
+                                    </td>
+                                    <td style="font-size:12px; color:#aaa;">{{ em['link'] }}</td>
+                                </tr>
+                                {% endfor %}
+                                {% for ei in env_img_engines %}
+                                <tr>
+                                    <td><b>Engine Ảnh</b></td>
+                                    <td style="font-weight:bold; color:#fff;">{{ ei['name'] }}</td>
+                                    <td><code style="color:#ff4081;">{{ ei['model'] }}</code></td>
+                                    <td>
+                                        <span class="badge badge-img">🎨 Tạo ảnh</span>
+                                        <span class="badge badge-env">.env</span>
+                                    </td>
+                                    <td style="font-size:12px; color:#aaa;">Tự động nhận diện theo Key/Model</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- TAB 3: QUẢN LÝ USER -->
                 <div id="tab-users" class="tab-pane">
-                    <!-- Thanh tạo user nhanh & tìm kiếm -->
                     <div class="toolbar">
                         <input type="text" id="userSearchInput" class="search-input" placeholder="🔍 Tìm kiếm theo tên đăng nhập..." oninput="filterUsers()">
                         <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
@@ -298,7 +446,7 @@
                     </div>
                 </div>
 
-                <!-- TAB 3: ĐỌC LỊCH SỬ TRÒ CHUYỆN -->
+                <!-- TAB 4: ĐỌC LỊCH SỬ TRÒ CHUYỆN -->
                 <div id="tab-chats" class="tab-pane">
                     <div class="toolbar">
                         <input type="text" id="chatSearchInput" class="search-input" placeholder="🔍 Tìm nội dung tin nhắn, câu trả lời hoặc tên người dùng..." oninput="filterChatLogs()">
@@ -335,7 +483,7 @@
                     </div>
                 </div>
 
-                <!-- TAB 4: XEM TẤT CẢ ẢNH AI ĐÃ TẠO -->
+                <!-- TAB 5: XEM TẤT CẢ ẢNH AI ĐÃ TẠO -->
                 <div id="tab-images" class="tab-pane">
                     <div class="toolbar">
                         <input type="text" id="imgSearchInput" class="search-input" placeholder="🔍 Tìm kiếm ảnh theo mô tả (prompt) hoặc tên người tạo..." oninput="filterImages()">
@@ -368,20 +516,21 @@
                     </div>
                 </div>
 
-                <!-- TAB 5: CẤU HÌNH HỆ THỐNG ĐỒNG BỘ TỪ .ENV -->
+                <!-- TAB 6: CẤU HÌNH HỆ THỐNG ĐỒNG BỘ TỪ .ENV & DB -->
                 <div id="tab-config" class="tab-pane">
                     <div class="info-box">
-                        <h3>🧠 Mô hình AI đang hoạt động (Tự động đọc từ .env)</h3>
+                        <h3>🧠 Mô hình Trò chuyện đang hoạt động (Tự động đọc & xếp hạng)</h3>
                         <p>Gói Lite ({{ config_info.lite_models | length }} model): <span>{{ config_info.lite_models | join(' | ') }}</span></p>
                         <p>Gói Pro ({{ config_info.pro_models | length }} model): <span>{{ config_info.pro_models | join(' | ') }}</span></p>
                     </div>
                     <div class="info-box">
-                        <h3>🎨 Mô hình tạo ảnh AI</h3>
-                        <p>Nhà cung cấp: <span>Pollinations AI (gen.pollinations.ai)</span></p>
-                        <p>Model ID: <span>{{ config_info.image_model }}</span></p>
+                        <h3>🎨 Mô hình Tạo ảnh & Nhận diện ảnh (Vision AI)</h3>
+                        <p>Danh sách Engine Tạo ảnh: <span>{{ config_info.image_models | join(' | ') }}</span></p>
+                        <p>Chế độ kích hoạt: <span>Tự động tạo ảnh khi trong câu có từ "tạo ảnh", "vẽ một bức ảnh"... ở bất kỳ vị trí nào</span></p>
                     </div>
                     <div class="info-box">
                         <h3>🗄️ Cơ sở dữ liệu & Phiên đăng nhập</h3>
+                        <p>Tác giả & Phát triển hệ thống: <span>Đồng Tuấn Phong</span></p>
                         <p>Hệ quản trị CSDL đang kết nối: <span>{{ config_info.db_type }}</span></p>
                         <p>Thời hạn giữ đăng nhập tự động (Persistent Cookie): <span>30 ngày</span></p>
                         <p>Giới hạn tin nhắn: <span>Lite (50 tin/ngày) - Pro (120 tin/ngày)</span></p>
@@ -406,6 +555,7 @@
                 
                 const titles = { 
                     'dashboard': 'Tổng quan hệ thống', 
+                    'models': 'Quản lý Model AI (Trò chuyện & Tạo ảnh)',
                     'users': 'Quản lý Người dùng', 
                     'chats': 'Lịch sử Trò chuyện Toàn Hệ Thống',
                     'images': 'Kho ảnh AI đã tạo', 
@@ -413,6 +563,45 @@
                 };
                 document.getElementById('pageTitle').innerText = titles[tabId];
                 if (window.innerWidth <= 768) toggleDevSidebar();
+            }
+
+            function toggleTierSelect() {
+                const role = document.getElementById('mRoleType').value;
+                document.getElementById('mTierGroup').style.display = (role === 'image') ? 'none' : 'flex';
+            }
+
+            async function addNewModel() {
+                const role_type = document.getElementById('mRoleType').value;
+                const tier = document.getElementById('mTier').value;
+                const display_name = document.getElementById('mDisplayName').value.trim();
+                const model_code = document.getElementById('mCode').value.trim();
+                const api_key = document.getElementById('mApiKey').value.trim();
+                const api_link = document.getElementById('mApiLink').value.trim();
+                const save_to_env = document.getElementById('mSaveToEnv').checked;
+
+                if (!model_code || !api_key) {
+                    return alert("Vui lòng nhập đầy đủ Mã Model (Model ID) và API Key!");
+                }
+
+                const res = await fetch('/api/admin/add_model', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ role_type, tier, display_name, model_code, api_key, api_link, save_to_env })
+                });
+                const data = await res.json();
+                alert(data.message);
+                if (data.success) location.reload();
+            }
+
+            async function toggleCustomModel(id) {
+                const res = await fetch('/api/admin/toggle_model/' + id, { method: 'POST' });
+                if (res.ok) location.reload();
+            }
+
+            async function deleteCustomModel(id) {
+                if (!confirm("Xoá model này khỏi danh sách tùy chỉnh?")) return;
+                const res = await fetch('/api/admin/delete_model/' + id, { method: 'POST' });
+                if (res.ok) location.reload();
             }
 
             function openLightbox(src, caption) {
